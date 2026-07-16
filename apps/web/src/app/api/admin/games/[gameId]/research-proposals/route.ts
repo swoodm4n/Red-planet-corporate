@@ -14,7 +14,7 @@ export const GET = handle(async (req, ctx) => {
   const status = url.searchParams.get("status");
 
   const proposals = await prisma.researchProposal.findMany({
-    where: { gameId: id, ...(status ? { status: status as "PENDING" | "APPROVED" | "REJECTED" } : {}) },
+    where: { gameId: id, ...(status && status !== "ALL" ? { status: status as "PENDING" | "APPROVED" | "REJECTED" } : {}) },
     orderBy: { createdAt: "asc" },
     include: { user: { select: { id: true, email: true } } },
   });
