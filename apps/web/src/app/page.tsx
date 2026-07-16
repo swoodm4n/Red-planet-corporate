@@ -1,13 +1,47 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api, ApiError } from "@/lib/client/api";
+import type { MeResponse } from "@/lib/client/types";
+
 export default function Home() {
+  const router = useRouter();
+  const [msg, setMsg] = useState("ESTABLISHING UPLINK…");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await api.get<MeResponse>("/api/auth/me");
+        if (!me.user) {
+          router.replace("/login");
+          return;
+        }
+        if (me.user.role === "ADMIN") {
+          router.replace("/admin/registrations");
+          return;
+        }
+        if (me.user.status === "PENDING") {
+          router.replace("/pending");
+          return;
+        }
+        if (me.user.status === "REJECTED") {
+          setMsg("This account has been rejected. Contact the game master.");
+          return;
+        }
+        router.replace("/play/dashboard");
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) router.replace("/login");
+        else setMsg("Uplink error: " + (e as Error).message);
+      }
+    })();
+  }, [router]);
+
   return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem", maxWidth: 720 }}>
-      <h1>Red Planet Corporate — API server</h1>
-      <p>
-        This service exposes the JSON API for Red Planet Corporate. There is no player UI here
-        (that is a separate frontend). See <code>apps/web/README.md</code> for the full route list
-        and request/response shapes.
-      </p>
-      <p>Health check: <code>GET /api/health</code></p>
-    </main>
+    <div className="auth-wrap">
+      <div className="loading">
+        {msg} <span className="blink">_</span>
+      </div>
+    </div>
   );
 }

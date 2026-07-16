@@ -1,13 +1,22 @@
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata = {
-  title: "Red Planet Corporate — API",
-  description: "Backend API for Red Planet Corporate (Mars Colonial Initiative).",
+  title: "RPC Terminal // Red Planet Corporate",
+  description: "Mars Colonial Initiative — subdivision command terminal.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
