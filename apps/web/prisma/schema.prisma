@@ -1,0 +1,398 @@
+// Red Planet Corporate — persistence layer.
+//
+// Design [D-045]: the AUTHORITATIVE game state is the serialized engine `Game`
+// snapshot stored on `Game.stateJson`. That snapshot round-trips losslessly into
+// the engine (serialize DB -> engine -> resolveTurn -> engine -> serialize DB).
+// The per-entity tables (SubdivisionState, BuildingState, ... ) are read-only
+// PROJECTIONS rebuilt from the snapshot after every resolution so the API/admin
+// can query relationally without re-parsing JSON. Never write gameplay state via
+// the projections; write it via the engine and re-project.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth & accounts
+// ---------------------------------------------------------------------------
+
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         Role       @default(PLAYER)
+  status       UserStatus @default(PENDING)
+  displayName  String?
+
+  // Registration preferences (chosen at signup, applied on approval). [D-014][D-015]
+  prefParentCompany   String?
+  prefParentPerk      String? // "A" | "B"
+  prefChoicePersonnel Json? // e.g. ["ENGINEER","ANALYST"]
+  prefDesiredName     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignment   SubdivisionAssignment?
+  resetTokens  PasswordResetToken[]
+  submissions  Submission[]
+  proposals    ResearchProposal[]
+  announcements Announcement[]
+  auditEntries AuditLog[]           @relation("AuditActor")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Game (authoritative snapshot) & scheduling
+// ---------------------------------------------------------------------------
+
+enum GameStatus {
+  SETUP
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model Game {
+  id              Int        @id @default(autoincrement())
+  name            String
+  seed            String // uint64 as decimal string (engine gameSeed)
+  turnNumber      Int        @default(1)
+  status          GameStatus @default(SETUP)
+  turnLengthHours Int        @default(96)
+  turnDeadline    DateTime?
+  stateJson       Json // authoritative serialized engine Game
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  assignments    SubdivisionAssignment[]
+  submissions    Submission[]
+  turnLogs       TurnLog[]
+  announcements  Announcement[]
+  auditEntries   AuditLog[]
+  proposals      ResearchProposal[]
+  queuedActions  AdminQueuedAction[]
+  subdivisions   SubdivisionState[]
+  buildings      BuildingState[]
+  modules        ModuleState[]
+  personnel      PersonnelState[]
+  vehicles       VehicleState[]
+  hexes          HexState[]
+  marketPrices   MarketPriceState[]
+  equityHoldings EquityHoldingState[]
+  equityPrices   EquityPriceState[]
+  activeEffects  ActiveEffectState[]
+}
+
+model SubdivisionAssignment {
+  id             String   @id @default(cuid())
+  gameId         Int
+  subdivisionId  Int
+  userId         String   @unique
+  createdAt      DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, subdivisionId])
+  @@index([gameId])
+}
+
+// ---------------------------------------------------------------------------
+// Orders & turn logs
+// ---------------------------------------------------------------------------
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model Submission {
+  id             String           @id @default(cuid())
+  gameId         Int
+  turnNumber     Int
+  subdivisionId  Int
+  userId         String
+  submissionJson Json // serialized engine Submission
+  status         SubmissionStatus @default(SUBMITTED)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, turnNumber, subdivisionId])
+  @@index([gameId, turnNumber])
+}
+
+model TurnLog {
+  id              String   @id @default(cuid())
+  gameId          Int
+  turnNumber      Int
+  logJson         Json // engine TurnLog (entries + invalidOrders)
+  eventJson       Json?
+  scoreboardJson  Json
+  createdAt       DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, turnNumber])
+  @@index([gameId])
+}
+
+model Announcement {
+  id           String   @id @default(cuid())
+  gameId       Int
+  authorUserId String
+  title        String
+  body         String
+  createdAt    DateTime @default(now())
+
+  game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorUserId], references: [id])
+
+  @@index([gameId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  gameId      Int?
+  adminUserId String
+  action      String // machine code, e.g. "STATE_EDIT", "APPROVE_REGISTRATION"
+  targetType  String?
+  targetId    String?
+  beforeJson  Json?
+  afterJson   Json?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  game  Game? @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  admin User  @relation("AuditActor", fields: [adminUserId], references: [id])
+
+  @@index([gameId])
+  @@index([adminUserId])
+}
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Freeform research: player submits text; admin grants STRUCTURED effects. [D-034][D-047]
+model ResearchProposal {
+  id                String         @id @default(cuid())
+  gameId            Int
+  subdivisionId     Int
+  userId            String
+  proposalText      String
+  status            ProposalStatus @default(PENDING)
+  adminResponse     String?
+  grantedEffectsJson Json? // structured StructuredEffectGrant[] (never free text)
+  resolvedByUserId  String?
+  resolvedAt        DateTime?
+  createdAt         DateTime       @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([gameId, subdivisionId])
+}
+
+// Admin actions queued for the next resolution (e.g. retirement). [D-032][D-046]
+model AdminQueuedAction {
+  id          String   @id @default(cuid())
+  gameId      Int
+  type        String // "RETIRE_SUBDIVISION"
+  payloadJson Json
+  appliedTurn Int?
+  createdAt   DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
+// ---------------------------------------------------------------------------
+// Projections (rebuilt from Game.stateJson after every resolution) [D-045]
+// ---------------------------------------------------------------------------
+
+model SubdivisionState {
+  gameId        Int
+  subdivisionId Int
+  name          String
+  parentCompany String
+  parentPerk    String
+  status        String
+  earthRelations Int
+  resourcesJson Json
+  composite     Float  @default(0)
+  rank          Int    @default(0)
+  categoriesJson Json?
+  turnNumber    Int
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, subdivisionId])
+  @@index([gameId])
+}
+
+model BuildingState {
+  gameId        Int
+  buildingId    Int
+  subdivisionId Int
+  type          String
+  tier          String
+  col           Int
+  row           Int
+  status        String
+  garrisonJson  Json
+  modulesJson   Json
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, buildingId])
+  @@index([gameId, subdivisionId])
+}
+
+model ModuleState {
+  gameId     Int
+  moduleId   Int
+  buildingId Int
+  subdivisionId Int
+  type       String
+  status     String
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, moduleId])
+  @@index([gameId, buildingId])
+}
+
+model PersonnelState {
+  gameId            Int
+  personnelId       Int
+  subdivisionId     Int
+  type              String
+  status            String
+  assignedBuildingId Int?
+  assignedVehicleId  Int?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, personnelId])
+  @@index([gameId, subdivisionId])
+}
+
+model VehicleState {
+  gameId        Int
+  vehicleId     Int
+  subdivisionId Int
+  hull          String
+  status        String
+  col           Int
+  row           Int
+  crewJson      Json
+  modulesJson   Json
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, vehicleId])
+  @@index([gameId, subdivisionId])
+}
+
+model HexState {
+  gameId            Int
+  col               Int
+  row               Int
+  terrain           String
+  ownerSubdivisionId Int?
+  surveyed          Boolean @default(false)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, col, row])
+  @@index([gameId])
+}
+
+model MarketPriceState {
+  gameId           Int
+  resource         String
+  livePrice        Int // fixed-point (0.0001 Cr)
+  cumulativeBought Int
+  cumulativeSold   Int
+  turnNumber       Int
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, resource])
+  @@index([gameId])
+}
+
+model EquityPriceState {
+  gameId              Int
+  issuerSubdivisionId Int
+  sharePrice          Int // fixed-point
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, issuerSubdivisionId])
+  @@index([gameId])
+}
+
+model EquityHoldingState {
+  gameId              Int
+  issuerSubdivisionId Int
+  holderSubdivisionId Int
+  shares              Int
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, issuerSubdivisionId, holderSubdivisionId])
+  @@index([gameId])
+}
+
+model ActiveEffectState {
+  gameId        Int
+  effectId      Int
+  type          String
+  scope         String
+  source        String
+  turnsRemaining Int
+  magnitude     Int?
+  subdivisionId Int?
+  buildingId    Int?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, effectId])
+  @@index([gameId])
+}
