@@ -605,5 +605,106 @@ no new resolution math is introduced.
 
 ---
 
-*End of DECISIONS.md (D-001 – D-042). Append new decisions as later phases surface
+## H. Backend / Server (backend agent)
+
+### D-043 — Submission-time validation reuses the engine (new `validateSubmission` export)
+*Source: brief requires validating orders "at submission time and again at
+resolution" without reimplementing game logic; the engine only exported
+`resolveTurn`.*
+**Ruling:** The engine gains one minimal export, `validateSubmission(state,
+submission): InvalidOrder[]`, plus an extracted, exported `prepareTurnStart(ctx,
+admin)` (the start-of-turn retirement/activation/arrivals/housing block hoisted
+out of `resolveTurn`). `validateSubmission` clones the state, runs
+`prepareTurnStart`, snapshots turn-start resources, and calls the engine's own
+`validateGarrisonPhase` → `applyGarrison` → `validateActionsPhase`, returning the
+`InvalidOrder`s for that submission. The backend calls this at submission; the
+full Phase-2 validation runs again inside `resolveTurn` at resolution. No
+validation logic is duplicated in the server.
+**Reasoning:** Reusing the engine's real validation is the only way to keep
+submission-time and resolution-time checks identical. Extracting
+`prepareTurnStart` makes the pre-validation state match resolution exactly (a
+building built last turn is seen ACTIVE). Engine tests remain green (81).
+
+### D-044 — Auth is a custom signed-JWT session, not NextAuth
+*Source: brief says "NextAuth or equivalent".*
+**Ruling:** Sessions are stateless HS256 JWTs (via `jose`) in an httpOnly,
+SameSite=Lax cookie (`rpc_session`); passwords are bcrypt (cost 12); password
+resets use a random token whose SHA-256 hash is stored with a 1-hour expiry. The
+token carries only `{ sub: userId }`; role, approval status, and subdivision
+ownership are **always re-read from the DB per request**, so a revoked/downgraded
+user cannot act on stale claims. Password-reset email delivery is out of scope
+(the request endpoint returns the token directly in non-production).
+**Reasoning:** The app needs bespoke pending-approval and admin-assignment flows
+that are simpler and more auditable with owned primitives than NextAuth's
+adapters; re-reading authz from the DB every request is the safer default.
+
+### D-045 — Snapshot-authoritative persistence with read-only projections
+*Source: brief requires both a normalized schema (subdivisions/buildings/…/active
+effects) AND lossless round-trip into the engine's `Game` types.*
+**Ruling:** The **authoritative** state is the serialized engine `Game` stored on
+`Game.stateJson`. Round-trip is `deserializeGame(stateJson) → resolveTurn → new
+Game → serializeGame`; the only non-JSON values (bigint seed, two `Set`s) are
+converted explicitly. The per-entity tables (`SubdivisionState`, `BuildingState`,
+`ModuleState`, `PersonnelState`, `VehicleState`, `HexState`, `MarketPriceState`,
+`EquityPriceState`, `EquityHoldingState`, `ActiveEffectState`) are **read-only
+projections rebuilt from the snapshot after every resolution/edit**; nothing
+writes gameplay through them. Turn logs are immutable (`TurnLog`, unique per
+`gameId+turnNumber`).
+**Reasoning:** The engine owns the canonical, deeply-nested shape; mirroring it
+bidirectionally in SQL would risk divergence and break determinism. Snapshot =
+truth guarantees clean round-trip; projections satisfy the relational/queryable
+requirement without becoming a second source of truth.
+
+### D-046 — Admin manual events & direct edits are STRUCTURED data authored onto the snapshot
+*Source: brief requires "manually trigger any event type" and "directly edit game
+state" while never reimplementing engine logic; the engine's `AdminActions` hook
+only supports retirement.*
+**Ruling:** Retirements flow through the engine's `AdminActions.retireSubdivisionIds`
+(queued in `AdminQueuedAction`, applied at the next resolution — [D-032]). All
+other admin actions (manual events, direct state edits) are expressed as a fixed
+set of **structured ops** (`SET_RESOURCE`, `ADD_RESOURCE`,
+`SET/ADJUST_EARTH_RELATIONS`, `DISABLE_BUILDING`, `SET_HEX_OWNER`, `SET_OXYGEN`,
+`ADD_MILESTONE`, `REGISTER_EFFECT`, `RELEASE_CAPTIVE`) applied to the engine
+snapshot as **data**, then persisted + re-projected; the engine computes every
+consequence on the next resolution. A "manual event" is just the structured
+effect(s) that event would produce (e.g. Dust Storm = `REGISTER_EFFECT
+OUTPUT_DELTA/COLONY -1 requiresUnshielded, 2 turns`). `REGISTER_EFFECT` defaults
+`registeredTurn = turnNumber - 1` so the effect bites the very next resolved turn
+for `turnsRemaining` turns (per the tick rule in [D-042]). Every manual change is
+written to the `AuditLog` (before/after).
+**Reasoning:** Authoring `ActiveEffect` records / resource numbers is data entry,
+not game logic — the engine still derives all outcomes. A closed op set keeps
+"free-text effects" impossible while covering every event's mechanical result.
+
+### D-047 — Freeform research adjudication grants structured effects only
+*Source: brief — player submits text proposal; admin grants stat modifiers/unlocks
+through structured fields, never free-text effects. Aligns with [D-034].*
+**Ruling:** A player POSTs a `ResearchProposal` (free text). An admin resolves it
+APPROVED/REJECTED; on approval the admin attaches `grantedEffects` — an array of
+the same structured ops as D-046 (e.g. `ADD_RESOURCE`, `REGISTER_EFFECT`,
+`SET_OXYGEN`) — which are applied via the audited edit pipeline. The proposal
+text is never executed; the granted structured effects are stored on the proposal
+and in the audit log.
+**Reasoning:** Matches [D-034] (research effects are admin-stamped, engine never
+invents them) and the brief's structured-effect-editor requirement.
+
+### D-048 — Seed creates six parent-distinct subdivision slots; approval assigns a slot
+*Source: brief seed = "fresh 6-player game"; [D-014] registration choices vs.
+`makeGame` needing choices up front.*
+**Ruling:** The seed builds one game via `makeGame` with **six subdivision slots**,
+one per parent company (§5), perk A, generic names, default choice-personnel.
+Registration captures the player's *preferences* (parent/perk/personnel/name) as
+advisory fields. On approval the admin assigns the user to a slot
+(`SubdivisionAssignment`, unique per user and per game-slot); admins may match the
+player's requested parent or use the structured state-edit tools to reconfigure.
+Players are variable in number (up to 6); unassigned slots simply run on default
+"repeat garrison, no actions" until assigned or retired.
+**Reasoning:** `makeGame` requires parent/perk at creation, so a ready 6-slot game
+plus admin slot-assignment is the cleanest reconciliation of "fresh 6-player seed"
+with per-player registration choices, and keeps [D-014]'s non-exclusive,
+admin-assigned model intact.
+
+---
+
+*End of DECISIONS.md (D-001 – D-048). Append new decisions as later phases surface
 gaps; never renumber existing entries.*

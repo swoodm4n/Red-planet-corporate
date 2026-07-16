@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rpc
+      POSTGRES_PASSWORD: rpc
+      POSTGRES_DB: rpc
+    ports:
+      - "5432:5432"
+    volumes:
+      - rpc_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rpc -d rpc"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://rpc:rpc@db:5432/rpc?schema=public"
+      AUTH_SECRET: "${AUTH_SECRET:-dev-insecure-secret-change-me-please-32b}"
+      SESSION_TTL_HOURS: "168"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@redplanet.example}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-change-me-strong-admin-password}"
+      CRON_SECRET: "${CRON_SECRET:-dev-cron-secret}"
+      DEFAULT_TURN_LENGTH_HOURS: "96"
+      APP_BASE_URL: "http://web:3000"
+    ports:
+      - "3000:3000"
+    # On boot: apply migrations, seed (idempotent), then start Next.
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npx tsx prisma/seed.ts &&
+             npx next start -p 3000"
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_started
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://rpc:rpc@db:5432/rpc?schema=public"
+      CRON_SECRET: "${CRON_SECRET:-dev-cron-secret}"
+      SCHEDULER_POLL_SECONDS: "60"
+    command: sh -c "npx tsx src/server/schedulerDaemon.ts"
+
+volumes:
+  rpc_pgdata:
