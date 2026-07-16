@@ -16,7 +16,7 @@ import { runPhase5 } from "./phases/phase5.js";
 import { runPhase6 } from "./phases/phase6.js";
 import { runPhase7 } from "./phases/phase7.js";
 import { runPhase8 } from "./phases/phase8.js";
-import { validateSubmissions } from "./validation.js";
+import { validateGarrisonPhase, validateActionsPhase } from "./validation.js";
 import type { Submission, TurnLog } from "./orders.js";
 import type { Game, ResourceBundle } from "./types.js";
 
@@ -67,11 +67,12 @@ export function resolveTurn(
     ctx.turnStartResources.set(sub.id, { ...sub.resources } as ResourceBundle);
   }
 
-  // ---- Phase 2: validation ----
-  validateSubmissions(ctx, submissions);
-
-  // ---- Garrison application (this turn's declared garrison) ----
+  // ---- Phase 2 (garrison) + garrison application + Phase 2 (actions) ----
+  // Garrison is validated and applied first so action validation's operational
+  // checks reflect this turn's declared garrison. [D-012]
+  validateGarrisonPhase(ctx, submissions);
   applyGarrison(ctx);
+  validateActionsPhase(ctx, submissions);
 
   // ---- Phases 3..8 ----
   runPhase3(ctx);

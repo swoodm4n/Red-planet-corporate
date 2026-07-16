@@ -54,10 +54,11 @@ function reject(
 }
 
 /**
- * Validate all submissions, populating ctx.plan and ctx.invalidOrders.
- * Reads turn-start state only.
+ * Pass 1 — validate garrison assignments and seed ctx.plan. Runs before garrison
+ * application so the applier consumes validated assignments. Missing/late
+ * submissions default to "repeat last garrison, no new actions" (§16 P1).
  */
-export function validateSubmissions(ctx: TurnContext, submissions: Submission[]): void {
+export function validateGarrisonPhase(ctx: TurnContext, submissions: Submission[]): void {
   for (const sub of ctx.game.subdivisions) {
     if (sub.status !== "ACTIVE") continue;
     const submission = submissions.find((s) => s.subdivisionId === sub.id);
@@ -77,15 +78,24 @@ export function validateSubmissions(ctx: TurnContext, submissions: Submission[])
           unitActions: [],
         } as Submission),
     };
+    validated.garrison = submission
+      ? validateGarrison(ctx, sub, submission)
+      : deriveCurrentGarrison(sub);
+    ctx.plan.push(validated);
+  }
+}
 
-    if (!submission) {
-      // Missing/late submission -> repeat last garrison, no new actions. §16 P1.
-      validated.garrison = deriveCurrentGarrison(sub);
-      ctx.plan.push(validated);
-      continue;
-    }
+/**
+ * Pass 2 — validate building/unit/political/corporate actions. Runs AFTER
+ * garrison application so operational checks reflect this turn's garrison.
+ */
+export function validateActionsPhase(ctx: TurnContext, submissions: Submission[]): void {
+  for (const validated of ctx.plan) {
+    const sub = ctx.game.subdivisions.find((s) => s.id === validated.subdivisionId);
+    if (!sub || sub.status !== "ACTIVE") continue;
+    const submission = submissions.find((s) => s.subdivisionId === sub.id);
+    if (!submission) continue; // late submission: no new actions
 
-    validated.garrison = validateGarrison(ctx, sub, submission);
     validated.buildingActions = submission.buildingActions.filter((a) =>
       validateBuildingAction(ctx, sub, a),
     );
@@ -102,8 +112,6 @@ export function validateSubmissions(ctx: TurnContext, submissions: Submission[])
       sub,
       submission.corporateActions ?? [],
     );
-
-    ctx.plan.push(validated);
   }
 }
 

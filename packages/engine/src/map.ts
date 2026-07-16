@@ -55,12 +55,16 @@ interface Cube {
   z: number;
 }
 
-/** Convert odd-q offset to cube coordinates. §9.2 */
+/**
+ * Convert odd-q offset to cube coordinates. §9.2 / [D-026].
+ * Uses 1-indexed col/row directly so column parity matches the D-026 neighbor
+ * definition (the absolute offset cancels out in distance differences).
+ */
 function offsetToCube(c: HexCoord): Cube {
-  const q = c.col - 1;
-  const r = c.row - 1;
-  const x = q;
-  const z = r - (q - (q & 1)) / 2;
+  const col = c.col;
+  const row = c.row;
+  const x = col;
+  const z = row - (col - (col & 1)) / 2;
   const y = -x - z;
   return { x, y, z };
 }
