@@ -55,11 +55,7 @@ export function resolveTurn(
   };
 
   // ---- Start-of-turn (before Phase 2). [D-038] ----
-  processRetirements(ctx, admin?.retireSubdivisionIds ?? []);
-  activatePending(ctx);
-  processResupplyArrivals(ctx);
-  processColonistArrivals(ctx);
-  applyHousingOverflow(ctx);
+  prepareTurnStart(ctx, admin);
 
   // Snapshot turn-start resources for validation (§2 affordability). [D-021]
   for (const sub of game.subdivisions) {
@@ -95,6 +91,20 @@ export function resolveTurn(
 }
 
 // ---- Start-of-turn helpers -------------------------------------------------
+
+/**
+ * Runs the deterministic start-of-turn mutations (retirements, PENDING→ACTIVE
+ * activation, resupply/colonist arrivals, housing overflow) that precede Phase 2
+ * validation [D-038]. Exported so the backend's submission-time validator can
+ * mirror the exact pre-validation state the engine will see at resolution. [D-043]
+ */
+export function prepareTurnStart(ctx: TurnContext, admin?: AdminActions): void {
+  processRetirements(ctx, admin?.retireSubdivisionIds ?? []);
+  activatePending(ctx);
+  processResupplyArrivals(ctx);
+  processColonistArrivals(ctx);
+  applyHousingOverflow(ctx);
+}
 
 function processRetirements(ctx: TurnContext, ids: number[]): void {
   for (const id of ids) {

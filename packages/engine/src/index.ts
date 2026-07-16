@@ -7,6 +7,9 @@
 export { resolveTurn } from "./resolveTurn.js";
 export type { ResolveResult, AdminActions } from "./resolveTurn.js";
 
+// Submission-time validation (reuses engine Phase-2 validation). [D-043]
+export { validateSubmission } from "./validateSubmission.js";
+
 // State construction.
 export { makeGame } from "./state.js";
 export type { GameSetup, SubdivisionSetup } from "./state.js";
