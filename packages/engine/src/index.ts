@@ -64,6 +64,9 @@ export type {
   VehicleStatus,
   SubdivisionStatus,
   ParentCompany,
+  ActiveEffect,
+  EffectType,
+  EffectScope,
 } from "./types.js";
 export { PHYSICAL_RESOURCES, MARKET_RESOURCE_ORDER } from "./types.js";
 
