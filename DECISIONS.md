@@ -543,7 +543,67 @@ money are implemented in-house.
 plumbing; a workspace keeps engine/backend cleanly separated while sharing one
 lockfile.
 
+### D-042 — Durational effects, Redundant-Systems floor, and wiring the remaining trade/vehicle/political actions
+*Source: GAME_SPEC §7.3 (Redundant Systems), §9 (movement/Transit Hub), §11.3
+(equity), §10.3/§14 (unit & political actions), §17 (multi-turn event modifiers).
+These were previously logged as notifications only; this decision makes them
+mechanical. Referenced in code as `[D-042]`.*
+**Ruling (umbrella; each sub-point is the smallest sensible reading):**
+(a) **Durational status effects.** A single generic list `game.activeEffects`
+holds `ActiveEffect`s registered (usually by Phase 7) with a `turnsRemaining`
+count and a `registeredTurn`. Effects are read where they bite — Phase 3/4
+production (`OUTPUT_DELTA`, `MODULE_HALF_EFFECT`, `TERRAIN_EXPLOIT_SUSPEND`) and
+Phase 5/validation (`NO_INTELLIGENCE`) — and ticked in Phase 8 *before* the turn
+number increments. An effect is **not** ticked on the turn it was registered, so a
+duration-N effect applies to the next N production phases (Dust Storm N=2, Solar
+Flare / Seismic / Equipment Recall / Ice Deposit Shift N=1). Scope is
+COLONY/SUBDIVISION/REGION/BUILDING with optional `requiresUnshielded` (Dust Storm
+ignores Hazard-Shield buildings) and `requiresNoRedundant` (Seismic ignores
+Redundant-Systems buildings) predicates.
+(b) **Redundant Systems 50% floor (§7.3).** A building that *would* be operational
+(built on a prior turn, garrison-min met, ACTIVE) but is `disabledUntilTurn`
+this turn runs at **50% output rounded down** — instead of 0 — if it carries an
+active Redundant Systems module. The floor also halves that building's
+Research-Link pool contribution. Any other non-operational reason (DERELICT,
+garrison unmet, built this turn) still yields 0.
+(c) **Equity Trade Action (§11.3).** Modelled as an Administrator unit action
+resolved in Phase 5 sub-step 1 at the **pre-turn (frozen) share price**. BUY draws
+shares from the issuer's own retained treasury and pays Credits into the issuer's
+treasury; SELL returns shares to the issuer treasury and the issuer buys them back
+from its Credits (capped by what it can afford, per D-020). Each trade adjusts
+`netSharesTradedThisTurn` for the Phase 8 price recompute. If treasury shares /
+buyer Credits / seller holdings are insufficient the order is a logged no-op.
+(d) **Vehicle Move & Attack (§9/§14, D-030).** Move validates a crewed ACTIVE
+vehicle and a reachable destination: adjacency within `vehicleMoveRange` (max of
+hull base and active Mobility modules), or a free node-jump between any two hexes
+in the subdivision's Transit-Hub network (own active hubs + Landing Zone, per
+D-027). IMPASSABLE and unaffordable difficult terrain are blocked. Moving onto a
+hex owned by a rival with a **closed border** against the mover triggers a spotting
+roll on the seeded stream in Phase 5 sub-step 2 (base 20%, +10% per Fortification
+on the hex, −10% if the vehicle is Analyst-crewed); if spotted the move is
+cancelled at origin, otherwise it proceeds. Attack requires the target vehicle /
+building to be at range ≤ 1 and resolves through the standard §14 conflict formula
+using `vehicleWeaponInvestment` vs `vehicleDefenseInvestment` / building defense
+(Contractors + Security Detail + Fortification, auto-defend honoured). A destroyed
+vehicle frees its crew back to AVAILABLE next turn (D-033).
+(e) **Remaining unit/political actions.** *Patrol* (Contractor) logs a report of
+rival buildings within range 1 of the patrolled hex. *Negotiate* (Administrator)
+is a recorded social action. *Lobby* (Administrator) adds weight to an active
+motion at 3 Cr/vote. *Enforce Territory* (Contractor) is a deterministic §14.2
+territorial dispute — Σ(attacker Fortification +1) vs Σ(incumbent Contractors +
+Fortification + Security Detail on the hex); strictly-greater attacker seizes the
+hex, ties hold for the incumbent, no RNG. *Counter-Intel* (Analyst, 2 Cr) and
+*Lockdown* (building action requiring a Security Detail module, 3 Cr) both add the
+building to `scratch.autoDefendBuildings`, which makes any Sabotage / Intercept /
+Vehicle-Attack against it auto-fail this turn.
+**Reasoning:** A single generic effect list keeps event modifiers mechanically
+enforced without bespoke flags per event, and centralising the read points means
+Phase 3/5 stay the single source of truth. The trade/vehicle/political rulings pick
+the least-surprising interpretation where §11.3/§14 leave counterparties, sourcing,
+or tie-breaks unstated, and reuse the existing conflict/movement/equity helpers so
+no new resolution math is introduced.
+
 ---
 
-*End of DECISIONS.md (D-001 – D-041). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-042). Append new decisions as later phases surface
 gaps; never renumber existing entries.*

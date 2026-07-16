@@ -268,6 +268,46 @@ export interface GameConfig {
   landingZoneHex: HexCoord;
 }
 
+// ---------------------------------------------------------------------------
+// Durational status effects (§17 multi-turn event modifiers). [D-042]
+// A generic, phase-checked list. Registered by Phase 7 events (or other sources),
+// read by Phase 3 (production) / Phase 5 (intel gating), ticked in Phase 8.
+// ---------------------------------------------------------------------------
+
+export type EffectType =
+  | "OUTPUT_DELTA" // additive change to a building's primary output (magnitude)
+  | "MODULE_HALF_EFFECT" // one module type produces half its output effect (Equipment Recall)
+  | "NO_INTELLIGENCE" // block Intelligence unit actions (Solar Flare)
+  | "TERRAIN_EXPLOIT_SUSPEND"; // Water Terrain Exploit suspended (Ice Deposit Shift)
+
+export type EffectScope = "COLONY" | "SUBDIVISION" | "REGION" | "BUILDING";
+
+export interface ActiveEffect {
+  id: number;
+  type: EffectType;
+  scope: EffectScope;
+  /** Origin (event name) for the turn report. */
+  source: string;
+  /** Production/action phases the effect still applies to (see [D-042]). */
+  turnsRemaining: number;
+  /** Turn registered; not ticked on the turn it is registered. [D-042] */
+  registeredTurn: number;
+  /** OUTPUT_DELTA additive amount (e.g. -1). */
+  magnitude?: number;
+  /** SUBDIVISION scope / REGION owner / BUILDING owner. */
+  subdivisionId?: number;
+  /** BUILDING scope target. */
+  buildingId?: number;
+  /** REGION scope target hexes. */
+  hexes?: HexCoord[];
+  /** MODULE_HALF_EFFECT target module type. */
+  moduleType?: ModuleType;
+  /** OUTPUT_DELTA condition: only unshielded buildings (Dust Storm). */
+  requiresUnshielded?: boolean;
+  /** OUTPUT_DELTA condition: only buildings without Redundant Systems (Seismic). */
+  requiresNoRedundant?: boolean;
+}
+
 export interface Game {
   id: number;
   gameSeed: bigint;
@@ -280,6 +320,8 @@ export interface Game {
   milestonesClaimed: Set<string>;
   activeMotions: Motion[];
   resupplyMissions: ResupplyMission[];
+  /** Durational status effects in force (§17 multi-turn modifiers). [D-042] */
+  activeEffects: ActiveEffect[];
   config: GameConfig;
   /** Monotonic id allocators. Never reuse ids. §3. */
   nextIds: {
@@ -289,5 +331,6 @@ export interface Game {
     vehicle: number;
     vehicleModule: number;
     motion: number;
+    effect: number;
   };
 }

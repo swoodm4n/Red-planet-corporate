@@ -7,6 +7,7 @@
 import { BUILDINGS, HULLS, MODULE_ALLOWED_ON, VEHICLE_MODULES } from "./constants.js";
 import type { TurnContext, ValidatedSubmission } from "./context.js";
 import { appealAvailable, universalBonusActive } from "./earthRelations.js";
+import { noIntelligenceActive } from "./effects.js";
 import {
   garrisonSetCount,
   hasActiveModule,
@@ -277,6 +278,13 @@ function validateBuildingAction(
         return false;
       }
       return true;
+    case "LOCKDOWN": {
+      if (!hasActiveModule(b, "SECURITY_DETAIL")) {
+        reject(ctx, sub.id, "BUILDING", `Lockdown requires a Security Detail module`, order);
+        return false;
+      }
+      return true;
+    }
     case "RESOURCE_TRANSFER":
     case "PASSIVE_INTEL_SCAN":
     case "EMERGENCY_EXTRACTION":
@@ -291,6 +299,11 @@ function validateUnitAction(
   sub: Subdivision,
   order: UnitActionOrder,
 ): boolean {
+  // Vehicle actions act through a crewed vehicle, not an available personnel. §8.2
+  if (order.action === "VEHICLE_MOVE" || order.action === "VEHICLE_ATTACK") {
+    return validateVehicleAction(ctx, sub, order);
+  }
+
   const unit = findUnit(sub, order.unitId);
   if (!unit) {
     reject(ctx, sub.id, "UNIT", `unit ${order.unitId} not found`, order);
@@ -307,6 +320,13 @@ function validateUnitAction(
   }
 
   const start = ctx.turnStartResources.get(sub.id)!;
+  const requireType = (t: Personnel["type"], label: string): boolean => {
+    if (unit.type !== t) {
+      reject(ctx, sub.id, "UNIT", `${label} requires ${t}`, order);
+      return false;
+    }
+    return true;
+  };
   const requireEngineer = (): boolean => {
     if (unit.type !== "ENGINEER") {
       reject(ctx, sub.id, "UNIT", `${order.action} requires an Engineer`, order);
@@ -384,26 +404,133 @@ function validateUnitAction(
     case "REPAIR_BUILDING":
       return true;
     case "SABOTAGE": {
-      if (unit.type !== "ANALYST") {
-        reject(ctx, sub.id, "UNIT", `Sabotage requires an Analyst`, order);
-        return false;
-      }
+      if (!requireType("ANALYST", "Sabotage")) return false;
       if (order.targetSubdivisionId == null || order.targetBuildingId == null) {
         reject(ctx, sub.id, "UNIT", `Sabotage needs target subdivision + building`, order);
         return false;
       }
+      // Solar Flare blocks colony-wide Intelligence actions. [D-042]
+      if (noIntelligenceActive(ctx.game, sub.id)) {
+        reject(ctx, sub.id, "UNIT", `Intelligence actions blocked this turn (Solar Flare)`, order);
+        return false;
+      }
       return true;
     }
-    case "INTERCEPT": {
-      if (unit.type !== "CONTRACTOR") {
-        reject(ctx, sub.id, "UNIT", `Intercept requires a Contractor`, order);
+    case "INTERCEPT":
+      return requireType("CONTRACTOR", "Intercept");
+    case "PATROL":
+      return requireType("CONTRACTOR", "Patrol");
+    case "ENFORCE_TERRITORY": {
+      if (!requireType("CONTRACTOR", "Enforce Territory")) return false;
+      if (!order.targetHex) {
+        reject(ctx, sub.id, "UNIT", `Enforce Territory needs a targetHex`, order);
         return false;
+      }
+      return true;
+    }
+    case "NEGOTIATE":
+      return requireType("ADMINISTRATOR", "Negotiate");
+    case "COUNTER_INTEL": {
+      if (!requireType("ANALYST", "Counter-Intel")) return false;
+      const b = order.targetBuildingId != null ? findBuilding(sub, order.targetBuildingId) : undefined;
+      if (!b) {
+        reject(ctx, sub.id, "UNIT", `Counter-Intel needs an own target building`, order);
+        return false;
+      }
+      if (!affordable(start, { CREDITS: 20000 })) {
+        reject(ctx, sub.id, "UNIT", `Counter-Intel unaffordable (2 Cr)`, order);
+        return false;
+      }
+      return true;
+    }
+    case "LOBBY": {
+      if (!requireType("ADMINISTRATOR", "Lobby")) return false;
+      const motionId = order.params?.motionId;
+      const votes = order.params?.lobbyVotes ?? 0;
+      if (motionId == null || !ctx.game.activeMotions.some((m) => m.id === motionId)) {
+        reject(ctx, sub.id, "UNIT", `Lobby needs a valid motionId`, order);
+        return false;
+      }
+      if (votes <= 0) {
+        reject(ctx, sub.id, "UNIT", `Lobby needs lobbyVotes > 0`, order);
+        return false;
+      }
+      if (!affordable(start, { CREDITS: 30000 * votes })) {
+        reject(ctx, sub.id, "UNIT", `Lobby unaffordable (3 Cr/vote)`, order);
+        return false;
+      }
+      return true;
+    }
+    case "TRADE_ACTION": {
+      if (!requireType("ADMINISTRATOR", "Trade Action")) return false;
+      const issuerId = order.params?.equityIssuerSubdivisionId;
+      const shares = order.params?.shares ?? 0;
+      const kind = order.params?.tradeKind ?? "BUY";
+      const issuer = ctx.game.subdivisions.find((s) => s.id === issuerId);
+      if (!issuer || issuer.status !== "ACTIVE") {
+        reject(ctx, sub.id, "UNIT", `Trade Action needs a valid issuer subdivision`, order);
+        return false;
+      }
+      if (shares <= 0) {
+        reject(ctx, sub.id, "UNIT", `Trade Action needs shares > 0`, order);
+        return false;
+      }
+      const price = ctx.game.equity.sharePrice[issuerId!] ?? 0;
+      if (kind === "BUY") {
+        if (!affordable(start, { CREDITS: price * shares })) {
+          reject(ctx, sub.id, "UNIT", `Trade Action unaffordable`, order);
+          return false;
+        }
+      } else {
+        // SELL: must currently hold at least `shares`.
+        const held = ctx.game.equity.holdings.find(
+          (h) => h.issuerSubdivisionId === issuerId && h.holderSubdivisionId === sub.id,
+        );
+        if (!held || held.shares < shares) {
+          reject(ctx, sub.id, "UNIT", `Trade Action: not enough shares held to sell`, order);
+          return false;
+        }
       }
       return true;
     }
     default:
       return true;
   }
+}
+
+function validateVehicleAction(
+  ctx: TurnContext,
+  sub: Subdivision,
+  order: UnitActionOrder,
+): boolean {
+  const v = sub.vehicles.find((x) => x.id === order.vehicleId);
+  if (!v) {
+    reject(ctx, sub.id, "UNIT", `vehicle ${order.vehicleId} not found`, order);
+    return false;
+  }
+  if (v.status !== "ACTIVE") {
+    reject(ctx, sub.id, "UNIT", `vehicle ${order.vehicleId} not active`, order);
+    return false;
+  }
+  if (v.crew.length === 0) {
+    reject(ctx, sub.id, "UNIT", `vehicle ${order.vehicleId} has no crew`, order);
+    return false;
+  }
+  if (order.action === "VEHICLE_MOVE" && !order.targetHex) {
+    reject(ctx, sub.id, "UNIT", `Vehicle Move needs a targetHex`, order);
+    return false;
+  }
+  if (order.action === "VEHICLE_ATTACK") {
+    if (order.targetSubdivisionId == null) {
+      reject(ctx, sub.id, "UNIT", `Vehicle Attack needs a target subdivision`, order);
+      return false;
+    }
+    if (order.targetVehicleId == null && order.targetBuildingId == null) {
+      reject(ctx, sub.id, "UNIT", `Vehicle Attack needs a target vehicle or building`, order);
+      return false;
+    }
+  }
+  return true;
 }
 
 function validatePoliticalAction(

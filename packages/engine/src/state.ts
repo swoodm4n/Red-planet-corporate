@@ -68,6 +68,7 @@ export function makeGame(setup: GameSetup): Game {
     vehicle: 1,
     vehicleModule: 1,
     motion: 1,
+    effect: 1,
   };
 
   const map = setup.map ?? makeDefaultMap(setup.landingZoneHex);
@@ -180,6 +181,7 @@ export function makeGame(setup: GameSetup): Game {
     milestonesClaimed: new Set(),
     activeMotions: [],
     resupplyMissions: [],
+    activeEffects: [],
     config: {
       normalizationEnabled: setup.normalizationEnabled ?? false,
       landingZoneHex: setup.landingZoneHex,

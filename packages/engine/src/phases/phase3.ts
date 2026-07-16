@@ -63,7 +63,7 @@ export function runPhase3(ctx: TurnContext): void {
     }
 
     for (const b of sub.buildings) {
-      const out = computePassiveOutput(b, ctx.game);
+      const out = computePassiveOutput(b, ctx.game, sub.id);
       if (out.resource && out.amount > 0) {
         const { stored, discarded } = addResourceCapped(sub, out.resource, out.amount);
         producedPhysical[out.resource] += stored;

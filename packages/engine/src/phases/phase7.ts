@@ -7,10 +7,19 @@
 
 import type { TurnContext } from "../context.js";
 import { adjustEr } from "../earthRelations.js";
+import { addEffect } from "../effects.js";
 import { addResourceCapped, countActiveModule, hasActiveModule } from "../helpers.js";
-import { rowMajorIndex } from "../map.js";
-import type { Building, Subdivision } from "../types.js";
+import { neighbors, rowMajorIndex } from "../map.js";
+import type { Building, HexCoord, ModuleType, Subdivision } from "../types.js";
 import type { TurnLog } from "../orders.js";
+
+/** Output-affecting module types eligible for Equipment Recall half-effect. [D-042] */
+const RECALLABLE_MODULES: ModuleType[] = [
+  "EFFICIENCY",
+  "OPERATIONS_DIRECTOR",
+  "PERSONNEL_MODULE",
+  "TERRAIN_EXPLOIT",
+];
 
 export const EVENT_TRIGGER_PCT = 15;
 
@@ -47,11 +56,27 @@ function colonyEvent(ctx: TurnContext, tone: string): TurnLog["event"] {
   switch (n) {
     case 1:
       name = "Dust Storm Season";
-      message = "-1 output to unshielded buildings for 2 turns (notification)";
+      addEffect(ctx.game, {
+        type: "OUTPUT_DELTA",
+        scope: "COLONY",
+        source: name,
+        magnitude: -1,
+        requiresUnshielded: true,
+        turnsRemaining: 2,
+        registeredTurn: ctx.turnNumber,
+      });
+      message = "-1 output to unshielded buildings for 2 turns";
       break;
     case 2:
       name = "Solar Flare";
-      message = "No Intelligence actions colony-wide this turn (notification)";
+      addEffect(ctx.game, {
+        type: "NO_INTELLIGENCE",
+        scope: "COLONY",
+        source: name,
+        turnsRemaining: 1,
+        registeredTurn: ctx.turnNumber,
+      });
+      message = "No Intelligence actions colony-wide next turn";
       break;
     case 3:
       name = "Earth Supply Convoy";
@@ -93,10 +118,20 @@ function colonyEvent(ctx: TurnContext, tone: string): TurnLog["event"] {
       name = "Comms Festival";
       message = "Political actions -1 Cr (notification)";
       break;
-    case 8:
+    case 8: {
       name = "Equipment Recall";
-      message = "One random module type at half effect this turn (notification)";
+      const mt = RECALLABLE_MODULES[ctx.rng.nextInt(RECALLABLE_MODULES.length)]!;
+      addEffect(ctx.game, {
+        type: "MODULE_HALF_EFFECT",
+        scope: "COLONY",
+        source: name,
+        moduleType: mt,
+        turnsRemaining: 1,
+        registeredTurn: ctx.turnNumber,
+      });
+      message = `${mt} modules at half effect next turn`;
       break;
+    }
   }
   return { scope: "COLONY", name, message, affectedSubdivisionIds: affected };
 }
@@ -112,12 +147,40 @@ function regionalEvent(ctx: TurnContext, tone: string): TurnLog["event"] {
     .sort((a, b) => rowMajorIndex(a.coord) - rowMajorIndex(b.coord));
   const focus = claimed[0];
   const affected: number[] = focus?.ownerSubdivisionId != null ? [focus.ownerSubdivisionId] : [];
+  const regionHexes: HexCoord[] = focus ? [focus.coord, ...neighbors(focus.coord)] : [];
   let name = "";
   let message = "";
   switch (n) {
-    case 1: name = "Dust Devil"; message = "Buildings in region without Hazard Shield disabled 1 turn (notification)"; break;
+    case 1: {
+      name = "Dust Devil";
+      // Buildings in region+adjacent without Hazard Shield disabled 1 turn (point-in-time).
+      for (const sub of ctx.game.subdivisions) {
+        if (sub.status !== "ACTIVE") continue;
+        for (const b of sub.buildings) {
+          if (b.status !== "ACTIVE" || isShielded(b)) continue;
+          if (!regionHexes.some((h) => h.col === b.hex.col && h.row === b.hex.row)) continue;
+          b.disabledUntilTurn = ctx.turnNumber + 1;
+        }
+      }
+      message = "Buildings in region without Hazard Shield disabled 1 turn";
+      break;
+    }
     case 2: name = "Mineral Vein Discovery"; message = "First to Survey gains free Terrain Exploit (notification)"; break;
-    case 3: name = "Seismic Event"; message = "Region buildings without Redundant Systems -1 output (notification)"; break;
+    case 3: {
+      name = "Seismic Event";
+      addEffect(ctx.game, {
+        type: "OUTPUT_DELTA",
+        scope: "REGION",
+        source: name,
+        hexes: regionHexes,
+        magnitude: -1,
+        requiresNoRedundant: true,
+        turnsRemaining: 1,
+        registeredTurn: ctx.turnNumber,
+      });
+      message = "Region buildings without Redundant Systems -1 output next turn";
+      break;
+    }
     case 4: {
       name = "Equipment Cache";
       const sub = ctx.game.subdivisions.find((s) => s.id === focus?.ownerSubdivisionId);
@@ -129,7 +192,19 @@ function regionalEvent(ctx: TurnContext, tone: string): TurnLog["event"] {
       break;
     }
     case 5: name = "Territorial Tension"; message = "Prompt, no auto effect"; break;
-    case 6: name = "Ice Deposit Shift"; message = "Region Water Terrain Exploit suspended 1 turn (notification)"; break;
+    case 6: {
+      name = "Ice Deposit Shift";
+      addEffect(ctx.game, {
+        type: "TERRAIN_EXPLOIT_SUSPEND",
+        scope: "REGION",
+        source: name,
+        hexes: regionHexes,
+        turnsRemaining: 1,
+        registeredTurn: ctx.turnNumber,
+      });
+      message = "Region Water Terrain Exploit suspended next turn";
+      break;
+    }
   }
   return { scope: "REGIONAL", name, message, affectedSubdivisionIds: affected };
 }

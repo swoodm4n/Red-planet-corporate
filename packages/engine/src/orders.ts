@@ -33,7 +33,8 @@ export type BuildingActionType =
   | "PRODUCE_VEHICLE"
   | "AMPLIFY_CREDIT_YIELD"
   | "RESEARCH_SPRINT"
-  | "PASSIVE_INTEL_SCAN";
+  | "PASSIVE_INTEL_SCAN"
+  | "LOCKDOWN";
 
 export interface BuildingActionOrder {
   buildingId: number;
@@ -64,19 +65,42 @@ export type UnitActionType =
   | "REPAIR_BUILDING"
   | "SABOTAGE"
   | "INTERCEPT"
-  | "FIELD_RESEARCH";
+  | "FIELD_RESEARCH"
+  // Administrator
+  | "TRADE_ACTION" // equity buy/sell (§11.3)
+  | "NEGOTIATE" // social/diplomatic (recorded)
+  | "LOBBY" // add weight to a motion (3 Cr/vote)
+  // Contractor
+  | "PATROL" // presence/intel report
+  | "ENFORCE_TERRITORY" // territorial dispute (§14.2)
+  // Analyst
+  | "COUNTER_INTEL" // auto-defend own building (§14.1)
+  // Vehicle (crewed) actions
+  | "VEHICLE_MOVE" // §9 movement
+  | "VEHICLE_ATTACK"; // §14 vehicle combat [D-030]
 
 export interface UnitActionOrder {
   unitId: number;
   action: UnitActionType;
+  /** For VEHICLE_MOVE / VEHICLE_ATTACK: the acting vehicle (crewed). */
+  vehicleId?: number;
   targetHex?: HexCoord;
   targetBuildingId?: number;
   targetSubdivisionId?: number;
   targetUnitId?: number;
+  /** For VEHICLE_ATTACK targeting a rival vehicle. */
+  targetVehicleId?: number;
   params?: {
     buildingType?: import("./types.js").BuildingType;
     moduleType?: ModuleType;
     namedUnits?: PersonnelType[];
+    /** TRADE_ACTION (equity). */
+    equityIssuerSubdivisionId?: number;
+    shares?: number;
+    tradeKind?: "BUY" | "SELL";
+    /** LOBBY. */
+    motionId?: number;
+    lobbyVotes?: number;
   };
 }
 

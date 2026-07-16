@@ -7,17 +7,22 @@ import {
   BASE_STORAGE_CAP,
   BUILDINGS,
   COMMERCIAL_HUB_CREDIT_CAP_BONUS,
+  HULLS,
   MODULES,
+  VEHICLE_MODULES,
   WAREHOUSE_STORAGE_BONUS,
 } from "./constants.js";
 import type {
   Building,
+  Game,
+  HexCoord,
   ModuleType,
   PersonnelType,
   PhysicalResource,
   ResourceBundle,
   ResourceType,
   Subdivision,
+  Vehicle,
 } from "./types.js";
 
 export function activeModules(b: Building): ModuleType[] {
@@ -188,4 +193,69 @@ export function personnelCount(sub: Subdivision): number {
 const PHYSICAL: PhysicalResource[] = ["ENERGY", "MINERALS", "WATER", "FOOD", "RESEARCH"];
 export function isPhysical(r: ResourceType): r is PhysicalResource {
   return (PHYSICAL as ResourceType[]).includes(r);
+}
+
+// ---- Vehicles (§8, §9, §14) ------------------------------------------------
+
+/** Movement range for a vehicle: max of hull base and Mobility module ranges. §9.3 */
+export function vehicleMoveRange(v: Vehicle): number {
+  let range = HULLS[v.hull].baseMove;
+  for (const m of v.modules) {
+    if (m.status !== "ACTIVE") continue;
+    const spec = VEHICLE_MODULES[m.name];
+    if (spec?.moveRange) range = Math.max(range, spec.moveRange);
+  }
+  return range;
+}
+
+/** Crew personnel types for a vehicle (used for role-match bonuses). [D-029] */
+export function vehicleCrewTypes(sub: Subdivision, v: Vehicle): PersonnelType[] {
+  const types: PersonnelType[] = [];
+  for (const id of v.crew) {
+    const p = sub.personnel.find((x) => x.id === id);
+    if (p) types.push(p.type);
+  }
+  return types;
+}
+
+/** Attacker weapon investment: Σ weapon modules (+role match, +Heavy hull). §14.2 / [D-030] */
+export function vehicleWeaponInvestment(sub: Subdivision, v: Vehicle): number {
+  let weapon = 0;
+  let hasWeapon = false;
+  for (const m of v.modules) {
+    if (m.status !== "ACTIVE") continue;
+    const spec = VEHICLE_MODULES[m.name];
+    if (spec?.weaponInvestment) {
+      weapon += spec.weaponInvestment;
+      hasWeapon = true;
+    }
+  }
+  if (hasWeapon && vehicleCrewTypes(sub, v).includes("CONTRACTOR")) weapon += 1; // role match
+  if (v.hull === "HEAVY" && hasWeapon) weapon += 1; // §14.2 +Heavy +1
+  return weapon;
+}
+
+/** Defender defense investment for a vehicle: Σ Plating/Countermeasures (+role match). §14.2 */
+export function vehicleDefenseInvestment(sub: Subdivision, v: Vehicle): number {
+  let defense = 0;
+  let hasDefense = false;
+  for (const m of v.modules) {
+    if (m.status !== "ACTIVE") continue;
+    const spec = VEHICLE_MODULES[m.name];
+    if (spec?.defenseInvestment) {
+      defense += spec.defenseInvestment;
+      hasDefense = true;
+    }
+  }
+  if (hasDefense && vehicleCrewTypes(sub, v).includes("CONTRACTOR")) defense += 1; // role match
+  return defense;
+}
+
+/** Transit-Hub network hexes for a subdivision: own active hubs + Landing Zone. §9.4 */
+export function transitHubNetworkHexes(game: Game, sub: Subdivision): HexCoord[] {
+  const hexes: HexCoord[] = sub.buildings
+    .filter((b) => b.type === "TRANSIT_HUB" && b.status === "ACTIVE")
+    .map((b) => b.hex);
+  hexes.push(game.config.landingZoneHex);
+  return hexes;
 }

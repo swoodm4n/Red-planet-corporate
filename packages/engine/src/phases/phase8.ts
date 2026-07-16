@@ -9,6 +9,7 @@
  */
 
 import type { TurnContext } from "../context.js";
+import { tickEffects } from "../effects.js";
 import { recomputeSharePrice } from "../equity.js";
 import { accrueResourceExport, adjustEr, universalBonusActive } from "../earthRelations.js";
 import { updateMarketPrices } from "../market.js";
@@ -89,6 +90,9 @@ export function runPhase8(ctx: TurnContext): {
   const leaders = categoryLeaders(boards);
   const leadersOut: TurnLog["categoryLeaders"] = {};
   for (const k of CATEGORY_KEYS) leadersOut[k] = leaders[k];
+
+  // 5b. Tick durational effects (before the turn increments). [D-042]
+  tickEffects(ctx.game);
 
   // 6. Increment turn.
   ctx.game.turnNumber += 1;

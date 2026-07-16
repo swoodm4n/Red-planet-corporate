@@ -75,7 +75,7 @@ function runEmergencyExtractions(ctx: TurnContext, sorted: TurnContext["plan"]):
   );
   for (const it of items) {
     // ×2 total output this turn: pay the passive amount again.
-    const out = computePassiveOutput(it.b, ctx.game);
+    const out = computePassiveOutput(it.b, ctx.game, it.sub.id);
     if (out.resource && out.amount > 0) {
       addResourceCapped(it.sub, out.resource, out.amount);
     }
@@ -123,7 +123,25 @@ function resolveBuildingAction(ctx: TurnContext, sub: Subdivision, order: Buildi
     case "PASSIVE_INTEL_SCAN":
       ctx.log.push({ phase: 4, subdivisionId: sub.id, code: "INTEL_SCAN", message: `Passive Intel Scan from building ${b.id}` });
       return;
+    case "LOCKDOWN":
+      return lockdown(ctx, sub, b);
   }
+}
+
+/** Lockdown: total sabotage/intercept immunity this turn (3 Cr). §7.2 / [D-011]. */
+function lockdown(ctx: TurnContext, sub: Subdivision, b: Building): void {
+  if (!affordAndPay(sub, cr(3))) {
+    ctx.log.push({ phase: 4, subdivisionId: sub.id, code: "LOCKDOWN_UNAFFORDABLE", message: `Lockdown unaffordable` });
+    return;
+  }
+  ctx.scratch.autoDefendBuildings.add(b.id);
+  ctx.log.push({ phase: 4, subdivisionId: sub.id, code: "LOCKDOWN", message: `Lockdown active on building ${b.id} (auto-defend)`, data: { buildingId: b.id } });
+}
+
+function affordAndPay(sub: Subdivision, fp: number): boolean {
+  if (sub.resources.CREDITS < fp) return false;
+  sub.resources.CREDITS -= fp;
+  return true;
 }
 
 function transitHubCap(b: Building): number {
@@ -179,7 +197,7 @@ function marketSale(ctx: TurnContext, sub: Subdivision, b: Building, order: Buil
 }
 
 function boostOutput(ctx: TurnContext, sub: Subdivision, b: Building): void {
-  const out = computePassiveOutput(b, ctx.game);
+  const out = computePassiveOutput(b, ctx.game, sub.id);
   if (!out.resource) return;
   const { stored } = addResourceCapped(sub, out.resource, 2);
   if (out.resource === "RESEARCH") sub.cum.researchGenerated += stored;
