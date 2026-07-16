@@ -1,0 +1,885 @@
+
+
+===== SHEET: Table of Contents =====
+RED PLANET CORPORATE — MASTER RULEBOOK |  |  | 
+A complete reference for buildings, modules, personnel, vehicles, actions, movement, events, economy, and scoring. Click any sheet name to jump there. |  |  | 
+# | Sheet | What's In It | Source Module
+  I. ECONOMY & STARTING SETUP |  |  | 
+1 | Starting Conditions | Housing math, starting personnel, buildings, resources, HQ subsidy, credit economy layers, parent company bonuses, turn-1 burn rate | Buildings
+  II. BUILDINGS, MODULES & PERSONNEL |  |  | 
+2 | Buildings & Modules | All 14 buildings with tier, slots, base production, build cost, upkeep, personnel requirement, and full module lists | Buildings
+3 | Module Glossary | Standardized definitions for all 16 module types and where each is available | Buildings
+4 | Personnel Reference | Engineer/Contractor/Administrator/Innovator/Analyst — upkeep, roles, typical buildings | Buildings
+  III. VEHICLES |  |  | 
+5 | Vehicle Hull Classes | Light/Medium/Heavy hulls, crewing rules, construction & design process | Vehicles
+6 | Vehicle Modules | Cargo/Weapon/Sensor/Mobility/Utility/Defense modules, vague-by-design effects, custom module guidance | Vehicles
+  IV. ACTIONS |  |  | 
+7 | Action System Overview | Garrison phase, building/unit/political/corporate actions, passive systems, conflict resolution | Action System
+8 | Building Actions | Every action each building unlocks, by garrison requirement | Action Reference
+9 | Module Actions | Every action each module adds or enhances on its parent building | Action Reference
+10 | Unit Actions | Every field action each personnel type can take independently | Action Reference
+11 | Turn Submission Template | Fill-in template for players submitting a turn, with worked examples | Action System
+  V. MAP & MOVEMENT |  |  | 
+12 | Map & Movement | 12x8 hex grid, terrain types & movement cost, Transit Hub network, closed borders & spotting mechanic | Movement
+  VI. EVENTS |  |  | 
+13 | Event System Overview | Frequency/roll mechanics, action-triggered risk table | Events
+14 | Colony-Wide Events | 8 events affecting every subdivision simultaneously | Events
+15 | Regional Events | 6 events affecting a hex cluster | Events
+16 | Subdivision Events | 8 events targeting a single player | Events
+  VII. EARTH RELATIONS |  |  | 
+17 | Earth Relations | Per-subdivision track, increases/decreases, thresholds, parent company bonus at 25+, universal bonus at 30 | Earth Relations
+  VIII. MARKET & ECONOMY |  |  | 
+18 | Dynamic Market System | Baseline prices, price movement formula, worked example, Earth vs. peer trade, resupply missions | Market
+19 | Subdivision Equity Market | Share basics, price formula anchored to Composite Score, dividends, economic warfare tactics | Market
+  IX. SCORING & STANDINGS |  |  | 
+20 | Scoring System | 6 scoring categories, composite score, category leaderboard, seasonal checkpoints | Standings
+21 | Public Dashboard Template | Ready-to-use standings table format with worked example | Standings
+  X. TURN PROCESSING & HOSTING |  |  | 
+22 | Turn Structure | 8-phase processing order, construction timing, simultaneous actions & discretionary conflicts | Turn Structure
+23 | Information Visibility | What's public vs. private by default, and how that can change | Turn Structure
+24 | Private Turn Report Template | What the host sends each player after processing a turn | Turn Structure
+  KNOWN OPEN ITEMS  (intentionally unresolved — not bugs) |  |  | 
+— | Tech Tree / Apply Research | Research is intentionally freeform — players propose what they're researching, host assigns a Research cost and mechanical effect at the table. No predefined tech tree exists by design. Several modules reference 'tech-gated' content as a placeholder for future host-approved research outcomes. | 
+— | Global Habitability Parameters | Global Contribution (Bio Facility module) references a colony-wide 'Oxygen parameter' and 'habitability track.' This system was sketched in early design (Oxygen 0-14, Temperature 0-8) but has not been rebuilt to match the current ruleset. Currently has no defined thresholds or mechanical consequences — host discretion until formalized. | 
+— | Vehicle Combat Resolution | Vehicle Weapon/Defense modules reference contesting hexes and territorial disputes, but vehicle-vs-vehicle or vehicle-vs-building combat doesn't have its own resolution table — currently falls under the general Conflict Resolution framework (Action System Overview) via host judgment on investment differential. | 
+
+
+===== SHEET: Starting Conditions =====
+RED PLANET CORPORATE — STARTING CONDITIONS |  |  |  | 
+All players begin with the baseline loadout. Parent company bonuses are applied on top. |  |  |  | 
+  HOUSING & POPULATION CAP |  |  |  | 
+Building | Capacity | Pre-built? |  | Notes
+Headquarters | 10 | Yes — via starting Outpost + Tier Upgrade |  | Primary base. Counts as starting territorial claim.
+Habitat Module | 8 | Yes — 1 pre-built |  | Total starting capacity: 18. Starting personnel: 10. Vacant: 8 — enough to staff 2 new buildings.
+  STARTING PERSONNEL  (10 total) |  |  |  | 
+Unit Type | Quantity | Upkeep/turn |  | Notes
+Engineer | 5 | 5 Food + 5 Water |  | Staff Power Facility, Bio Facility, and starting Outpost.
+Administrator | 2 | 2 Food + 2 Water + 4 Cr |  | Staff HQ and Habitat Module. Generate 4 Cr/turn passively.
+Contractor | 1 | 1 Food + 1 Water + 1 Cr |  | Staff HQ security requirement.
+Player Choice | 2 | Depends on type chosen |  | Chosen at registration. First meaningful strategic decision — signals intended playstyle.
+  STARTING BUILDINGS  (pre-built, no cost) |  |  |  | 
+Building | Upkeep/turn | Personnel |  | Notes
+Headquarters (via Outpost Tier Upgrade) | 2 E + 3 Cr + 1 Min | 2 Admin + 1 Contractor |  | Starting hex claim. Produces subsidy resources (see below). +1 Cr per claimed hex/turn.
+Habitat Module | 1 E + 2 Cr + 1 Food | 1 Administrator |  | 8 personnel capacity.
+Bio Facility | 1 E + 1 Cr + 1 Water | 2 Engineer |  | Food/Bio security from turn 1. Requires Water to operate.
+  STARTING STORED RESOURCES |  |  |  | 
+Resource | Amount |  |  | Notes
+Credits | 30 |  |  | Roughly 4 turns of burn before income must come online.
+Minerals | 25 |  |  | Enough for 2-3 buildings immediately.
+Energy | 15 |  |  | Buffer while Power Facility ramps up.
+Water | 15 |  |  | Buffer for Bio Facility and personnel upkeep.
+Food | 15 |  |  | Buffer for personnel and Habitat upkeep.
+Research | 0 |  |  | Forces Research Complex investment for tech path.
+  HQ STARTING SUBSIDY PRODUCTION  (parent company operating budget) |  |  |  | 
+Resource | Per Turn |  |  | Notes
+Energy | +5 E |  |  | Covers building upkeep; builds a buffer before Power Facility scales.
+Credits | +15 Cr |  |  | Covers personnel and building upkeep with small surplus. Does not scale — must build income.
+Water | +12 W |  |  | Covers personnel and Bio Facility upkeep.
+Food | +12 F |  |  | Covers personnel and Habitat upkeep.
+Minerals | +3 Min |  |  | Covers HQ/Warehouse upkeep; small construction buffer.
+Research | +0 |  |  | Intentionally zero — research path requires deliberate investment.
+⚠  HQ subsidy represents parent company operating budget. It covers starting burn but does not scale with expansion. Players must build proper generators as they grow. |  |  |  | 
+  THE CREDIT ECONOMY — THREE LAYERS |  |  |  | 
+Layer | Mechanic | Detail |  | Notes
+Layer 1: Administrator Passive Income | Each Administrator generates 2 Cr/turn inherently. | Commercial Hub adds +1 Cr/turn bonus per Administrator within range. |  | Scales with organizational growth. Early game floor. Commercial Hub is an Admin multiplier, not a standalone generator.
+Layer 2: Landing Zone Public Market | Any player can sell resources at the Landing Zone without a Transit Hub. | Rate: 3 resources = 1 Cr. Colony-wide cap: 15 resources/turn total. Per-player sub-cap: 6 resources/turn. |  | Early game income bridge. Naturally phases out as players build Transit Hubs and stop competing for the shared cap.
+Layer 3: Territory Income via HQ | HQ generates +1 Cr per claimed hex per turn. | Both Outpost and HQ hexes count. Encourages territorial expansion as an economic strategy. |  | Negligible early (1-2 hexes). Significant mid-late game (6-8 hexes = 6-8 Cr/turn passively).
+Transit Hub: Primary Trade Engine | Sell up to 10 resources/turn at 2:1 rate (2 resources = 1 Cr). | Expansion Module increases sell cap. Operations Director improves rate. Commercial Hub Diplomatic Suite further improves rate. |  | Main credit engine mid-to-late game. Only building enabling inter-player trades (via Trade Network module).
+  PARENT COMPANY BONUSES  (applied on top of baseline) |  |  |  | 
+Company | Building (choose 1 of 2) | Option A | Option B | Resource Bonus
+Terra Agricultural Syndicate |  | Bio Facility | Water Reclamation | +10 Food + 10 Water stored
+Unified Mining Consortium |  | Extraction Site | Power Facility | +15 Minerals + 5 Energy stored
+Stellar Dynamics Corporation |  | Transit Hub | Warehouse | +10 Credits + 10 Minerals stored
+Helix Pharmaceutical Group |  | Research Complex | Bio Facility | +10 Food + 5 Research stored
+Omega Security Solutions |  | HQ starts with Fortification installed | Free Contractor Personnel Module on any building | +10 Credits + 5 Minerals stored
+Genesis Tech Industries |  | Communications Array | Research Complex | +8 Research + 10 Credits stored
+  TURN 1 BURN RATE REFERENCE  (baseline, no parent company bonus) |  |  |  | 
+Source | Energy | Credits | Water / Food | Minerals
+Headquarters upkeep | -2 E | -3 Cr |  | -1 Min
+Habitat Module upkeep | -1 E | -2 Cr | -1 Food | 
+Bio Facility upkeep | -1 E | -1 Cr | -1 Water | 
+5 Engineers |  |  | -5 F / -5 W | 
+2 Administrators |  | -4 Cr | -2 F / -2 W | 
+1 Contractor |  | -1 Cr | -1 F / -1 W | 
+2 Player Choice (est.) |  | -2 Cr | -2 F / -2 W | 
+TOTAL BURN | -4 E | -13 Cr | -11 F / -11 W | -1 Min
+HQ Subsidy | +5 E | +15 Cr | +12 F / +12 W | +3 Min
+Admin Passive Income |  | +4 Cr |  | 
+NET (before Admin LZ) | +1 E | +6 Cr | +1 F / +1 W | +2 Min
+
+
+===== SHEET: Buildings & Modules =====
+Building | Tier | Slots | Base Production | Build Cost | Upkeep | Personnel Req. | Module | Effect | Repeatable
+── RESOURCE GENERATORS ── |  |  |  |  |  |  |  |  | 
+Power Facility | T1 | 8 | +2 Energy / turn | 12 Min + 8 Cr | 1 E + 1 Cr / turn | 2 Engineer |  | Generates Energy each turn | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases Energy output per turn | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Extends power distribution to an additional adjacent hex | Yes
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Engineer requirement of this facility | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Hazard Shield | Protects against dust storm and radiation damage | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; increases Energy output | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Engineer | Personnel Module | Assigns additional Engineers; improves operational uptime | —
+Extraction Site | T1 | 8 | +2 Minerals / turn | 12 Min + 8 Cr | 1 E + 1 Cr / turn | 3 Engineer |  | Generates Minerals each turn | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases Mineral output per turn | Yes
+ |  |  |  | 10 Min + 8 Cr | 1 E + 1 Cr / turn | +2 Engineer | Terrain Exploit | Unlocks bonus output on matching terrain hex | —
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Sensor Array | Reveals resource deposits in adjacent hexes | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; increases Mineral output | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Engineer requirement of this facility | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Engineer | Personnel Module | Assigns additional Engineers; increases extraction rate | —
+Water Reclamation | T1 | 8 | +2 Water / turn | 12 Min + 8 Cr | 1 E + 1 Cr / turn | 2 Engineer |  | Generates Water each turn | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases Water output per turn | Yes
+ |  |  |  | 10 Min + 8 Cr | 1 E + 1 Cr / turn | +2 Engineer | Terrain Exploit | Unlocks bonus output on matching terrain hex | —
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Reduces Water consumption across all personnel | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; increases Water output | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Engineer requirement of this facility | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Engineer | Personnel Module | Assigns additional Engineers; improves recycling efficiency | —
+Bio Facility | T1 | 8 | +2 Food/Bio / turn | 12 Min + 8 Cr + 3 Water | 1 E + 1 Cr + 1 Water / turn | 2 Engineer |  | Generates Food/Bio each turn | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases Food/Bio output per turn | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Cr + 6 Food | 1 Cr / turn | — | Global Contribution | Contributes to colony-wide Oxygen parameter | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Expands grow capacity; supports additional personnel | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; increases Food/Bio output | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Engineer requirement of this facility | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Innovator | Personnel Module | Assigns Innovators; unlocks advanced biological research | —
+Research Complex | T1 | 8 | +2 Research / turn | 14 Min + 10 Cr | 1 E + 1 Cr + 1 Research / turn | 3 Innovator |  | Generates Research each turn | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases Research output per turn | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Prevents research loss from damage or sabotage | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Stores completed research; prevents tech loss on damage | —
+ |  |  |  | 12 Cr | 1 Cr / turn | — | Diplomatic Suite | Enables Research sharing agreements with other players | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; increases Research output | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Innovator requirement of this facility | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Innovator | Personnel Module | Assigns additional Innovators; increases Research output | —
+Commercial Hub | T1 | 8 | Each Admin within range: +1 Cr/turn bonus; improves Transit Hub sell rate | 14 Min + 10 Cr | 1 E + 1 Cr / turn | 2 Administrator |  | Amplifies Administrator Credit yield; improves trade rates | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Further increases Administrator Credit bonus | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Sensor Array | Reveals competitor market activity and credit levels | —
+ |  |  |  | 12 Cr | 1 Cr / turn | — | Diplomatic Suite | Improves Transit Hub sell rates for this subdivision | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases credit storage cap | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces Administrator requirement of this facility | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Analyst | Personnel Module | Assigns Analysts; improves market intelligence and rates | —
+── INFRASTRUCTURE ── |  |  |  |  |  |  |  |  | 
+Habitat Module | T1 | 8 | Capacity: 8 personnel | 10 Min + 12 Cr | 1 E + 2 Cr + 1 Food / turn | 1 Administrator |  | Houses personnel; required before expansion | 
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases maximum personnel capacity | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces personnel attrition from events | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Hazard Shield | Protects personnel from dust storm and radiation events | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 4 Cr + 6 Research | 1 E + 1 Cr / turn | — | Research Link | Feeds habitability data into Research output | —
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | Automation Module | Reduces upkeep cost of housing personnel | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns additional Administrator; improves morale | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Innovator | Personnel Module | Assigns Innovators; enables on-site research activities | —
+Outpost | T0 | 3 | Territorial claim only | 6 Min + 4 Cr | 1 E + 1 Cr / turn | 2 Engineer |  | Claims and holds a hex on the map | 
+ |  |  |  | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Sensor Array | Reveals unit movements in adjacent hexes | —
+ |  |  |  | 10 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Fortification | Increases defensive strength; requires security staffing | —
+ |  |  |  | 18 Min + 24 Cr | — (HQ upkeep) | — (HQ req.) | Tier Upgrade | Converts Outpost (T0) into Headquarters (T1) | —
+Headquarters | T1 | 8 | Capacity: 10 personnel; +1 action/turn; +1 Cr per claimed hex/turn; sell up to 6 resources/turn at Landing Zone rate; +5 E, +15 Cr, +12 Water, +12 Food, +3 Min / turn (starting subsidy — scales down as economy develops) | Via Tier Upgrade only | 2 E + 3 Cr + 1 Min / turn | 2 Administrator + 1 Contractor |  | Primary base; command center; territorial income; limited sell action | 
+ |  |  |  | 10 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Fortification | Increases defensive strength; requires security staffing | Yes
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Administrator | Command Suite | Increases Administrator effectiveness at this location | —
+ |  |  |  | 12 Cr | 1 Cr / turn | — | Diplomatic Suite | Enables Political actions at this location | —
+ |  |  |  | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Sensor Array | Reveals unit movements in adjacent hexes | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Enables direct colonist/supply delivery to this hex | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; boosts HQ action effectiveness | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Any | Personnel Module | Assigns a unit type; boosts that unit's actions here | —
+Power Conduit | T1 | 4 | Relays up to 4 Energy / turn | 6 Min + 4 Cr | 1 Cr / turn | — |  | Distributes Energy to an adjacent hex | 
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases distribution range by one additional hex | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces power loss from events and sabotage | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Hazard Shield | Protects conduit from dust storm and radiation damage | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+Warehouse | T1 | 6 | +20 storage capacity (all resources) | 8 Min + 6 Cr | 1 E + 1 Cr + 1 Min / turn | 2 Engineer |  | Increases resource storage caps | 
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Further increases storage capacity | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Prevents resource loss from environmental events | Yes
+ |  |  |  | 10 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Fortification | Increases defensive strength; requires security staffing | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Reduces supply costs for resource transfers | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; improves transfer and sorting speed | —
+Communications Array | T1 | 8 | Intel range: 2 hexes; 1 Analyst action/turn | 10 Min + 14 Cr + 4 Research | 2 E + 2 Cr + 1 Research / turn | 2 Analyst + 1 Engineer |  | Enables Analyst operations; sets intel range | 
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Command Suite | Increases Analyst action effectiveness | —
+ |  |  |  | 10 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Fortification | Increases defensive strength; requires security staffing | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases Analyst operational range | Yes
+ |  |  |  | 12 Cr | 1 Cr / turn | — | Diplomatic Suite | Enables colony-wide broadcasts via Comms Array | —
+ |  |  |  | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | Sensor Array | Increases passive intel gathered each turn | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; improves broadcast and intel output | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Analyst | Personnel Module | Assigns additional Analysts; further boosts intel ops | —
+Transit Hub | T1 | 8 | Sell up to 10 resources/turn at 2:1 rate (2 resources = 1 Cr); anchors this subdivision's Transit Hub network (see Map & Movement) | 12 Min + 10 Cr + 4 Research | 2 E + 2 Cr / turn | 2 Engineer + 1 Administrator |  | Primary resource-to-credit conversion building; network node for Transit Hub movement | 
+ |  |  |  | 10 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Engineer | Command Suite | Allows additional Engineer actions per turn | —
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Enables rapid redeployment during crisis events | —
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Reduces resource costs for inter-hex construction | Yes
+ |  |  |  | 12 Min + 18 Cr | 2 E + 2 Cr / turn | +2 Administrator | Trade Network | Enables direct resource trades between subdivisions | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases sell cap by one increment per module | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; improves sell rate | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Engineer | Personnel Module | Assigns additional Engineers; increases logistics throughput | —
+── PRODUCTION ── |  |  |  |  |  |  |  |  | 
+Vehicle Workshop | T1 | 8 | Vehicle production — see Vehicle Hull Classes & Vehicle Modules sheets | 14 Min + 10 Cr | 2 E + 2 Cr + 1 Min / turn | 3 Engineer |  | Constructs and maintains vehicles (placeholder) | 
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Efficiency Module | Increases vehicle production speed | Yes
+ |  |  |  | 6 Cr | 1 Cr / turn | — | Redundant Systems | Reduces downtime from events and sabotage | Yes
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Expansion Module | Increases workshop capacity; supports more vehicle types | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Hazard Shield | Protects workshop from dust storm and radiation damage | —
+ |  |  |  | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Security Detail | Assigns Contractors; protects against Analyst sabotage | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +1 Administrator | Operations Director | Assigns Administrator; improves production coordination | —
+ |  |  |  | 4 Cr + 6 Research | 1 E + 1 Cr / turn | — | Research Link | Feeds engineering data into Research output | —
+ |  |  |  | 6 Cr | 1 Cr / turn | +2 Engineer | Personnel Module | Assigns additional Engineers; increases production rate | —
+
+
+===== SHEET: Module Glossary =====
+Module Type | Build Cost | Upkeep | Personnel | Repeatable | Standardized Effect | Available On
+Efficiency Module | 6 Cr | 1 Cr / turn | — | Yes | Increases primary output or reduces operational costs of this building | All Resource Generators, Warehouse, Transit Hub, Vehicle Workshop (on Commercial Hub, Efficiency Module instead boosts the Administrator Credit bonus — see Buildings & Modules)
+Redundant Systems | 6 Cr | 1 Cr / turn | — | Yes | Reduces negative effects from events, sabotage, or environmental hazards | All Resource Generators, Habitat Module, Power Conduit, Warehouse, Transit Hub, HQ, Vehicle Workshop
+Expansion Module | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | Yes | Increases capacity, range, reach, or sell cap of this building's primary function | Power Facility, Water Reclamation, Habitat Module, Outpost, HQ, Power Conduit, Commercial Hub, Comms Array, Transit Hub, Vehicle Workshop
+Fortification | 10 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | Yes | Increases resistance to hostile unit actions and sabotage; requires security staffing | Outpost, Headquarters, Warehouse, Communications Array
+Security Detail | 6 Min + 6 Cr | 1 E + 1 Cr / turn | +1 Contractor | — | Assigns Contractors to this building; protects against Analyst sabotage actions | All buildings except Power Conduit
+Operations Director | 6 Cr | 1 Cr / turn | +1 Administrator | — | Assigns an Administrator; increases primary output or reduces upkeep of this building | All buildings except Power Conduit and Outpost
+Terrain Exploit | 10 Min + 8 Cr | 1 E + 1 Cr / turn | +2 Engineer | — | Unlocks bonus output when built on the matching terrain hex type | Extraction Site, Water Reclamation
+Sensor Array | 6 Cr + 3 Research | 1 E + 1 Cr / turn | +1 Analyst | — | Reveals information about adjacent hexes, rivals, or market activity; requires Analyst operator | Extraction Site, Commercial Hub, Outpost, Headquarters, Comms Array
+Command Suite | 10 Cr + 3 Research | 1 E + 1 Cr / turn | +1 [unit type] | — | Increases effectiveness of the specific unit type assigned to this building | HQ (+1 Admin), Comms Array (+1 Analyst), Transit Hub (+1 Engineer)
+Diplomatic Suite | 12 Cr | 1 Cr / turn | — | — | Enables or improves political, trade agreement, or reputation actions | Research Complex, Commercial Hub, Headquarters, Comms Array
+Automation Module | 10 Cr + 3 Research | 1 E + 1 Cr / turn | — | — | Reduces the personnel requirement of this building by 1 | All Resource Generators, Habitat Module, Research Complex, Commercial Hub
+Personnel Module | 6 Cr | 1 Cr / turn | +2 [assigned] | — | Assigns a specific unit type to this building, boosting its primary function | All Resource Generators, Habitat Module, HQ, Comms Array, Transit Hub, Vehicle Workshop
+Hazard Shield | 6 Min + 6 Cr | 1 E + 1 Cr / turn | — | — | Protects against dust storm, radiation, and other environmental event damage | Power Facility, Extraction Site, Water Reclamation, Habitat Module, Power Conduit, Comms Array, Transit Hub, Vehicle Workshop
+Research Link | 4 Cr + 6 Research | 1 E + 1 Cr / turn | — | — | Connects this facility to the research network, feeding operational data into Research output | Power Facility, Bio Facility, Research Complex, Habitat Module, Vehicle Workshop
+Trade Network | 12 Min + 18 Cr | 2 E + 2 Cr / turn | +2 Administrator | — | The only module enabling direct resource trades between subdivisions | Transit Hub only
+Global Contribution | 6 Cr + 6 Food | 1 Cr / turn | — | — | Positively affects a colony-wide parameter such as Oxygen or Infrastructure | Bio Facility
+Tier Upgrade | 18 Min + 24 Cr | — (HQ upkeep) | — (HQ req.) | — | Converts this building into its next tier, unlocking additional module slots | Outpost (T0) → Headquarters (T1)
+
+
+===== SHEET: Personnel Reference =====
+Unit Type | Upkeep / turn | Role | Typical Buildings | Notes
+Engineer | 1 Food + 1 Water | Labor, construction, physical operations | Power Facility, Extraction Site, Water Reclamation, Bio Facility, Outpost, Warehouse, Communications Array (hardware), Transit Hub, Vehicle Workshop | Cheapest to maintain; backbone of any expansion. Required for most physical infrastructure and resource extraction. Transit Hub movement driven by Engineers.
+Contractor | 1 Food + 1 Water + 1 Cr | Security, enforcement, asset protection | Fortification (all), Security Detail (all), Headquarters | Primary defense unit. Salary reflects corporate security contracts. Required to staff any defensive or protective module. Without Contractors, buildings are vulnerable to Analyst sabotage.
+Administrator | 1 Food + 1 Water + 2 Cr | Management, diplomacy, trade, market operations | Commercial Hub, Headquarters, Habitat Module, Transit Hub, Trade Network, Operations Director (all buildings) | Most credit-expensive unit but generates 2 Cr/turn passively. Commercial Hub adds +1 Cr/turn bonus per Administrator. Essential for economic and political paths. Bottleneck for trade operations.
+Innovator | 1 Food + 1 Water + 1 Cr + 1 Energy | Research, technology, advanced systems | Research Complex, Bio Facility (Personnel Module), Habitat Module (Personnel Module) | Energy draw reflects compute and lab equipment. Primary Research producers. Fielding many Innovators requires strong Energy infrastructure.
+Analyst | 1 Food + 1 Water + 1 Cr + 1 Research | Intelligence, surveillance, market monitoring, espionage | Communications Array, Sensor Array modules (all buildings), Commercial Hub (Personnel Module) | Research upkeep means Analyst corps are only sustainable with strong Innovator output. Every Sensor Array module requires an Analyst operator.
+
+
+===== SHEET: Building Actions =====
+RED PLANET CORPORATE — BUILDING ACTION REFERENCE |  |  |  |  |  |  | 
+Each building unlocks specific actions when its garrison requirements are met. Actions are taken by the building, not the unit — units are the enabler. |  |  |  |  |  |  | 
+  BUILDING ACTIONS |  |  |  |  |  |  | 
+Building | Tier | Action | Type | Garrison Required | Effect | Limit / turn | Cost
+Power Facility | T1 |  |  |  |  |  | 
+ |  | Harvest Energy | Production | 2 Engineer | Generate +2 Energy this turn | 1 per garrison set | —
+ |  | Boost Output | Production | 2 Engineer (surplus) | Generate additional +2 Energy this turn | 1 per surplus garrison set | —
+ |  | Emergency Extraction | Production | 2 Engineer | Double Energy output this turn; risk equipment damage event | 1 per turn | Corporate Action slot
+Extraction Site | T1 |  |  |  |  |  | 
+ |  | Harvest Minerals | Production | 3 Engineer | Generate +2 Minerals this turn | 1 per garrison set | —
+ |  | Boost Output | Production | 3 Engineer (surplus) | Generate additional +2 Minerals this turn | 1 per surplus garrison set | —
+Water Reclamation | T1 |  |  |  |  |  | 
+ |  | Harvest Water | Production | 2 Engineer | Generate +2 Water this turn | 1 per garrison set | —
+ |  | Boost Output | Production | 2 Engineer (surplus) | Generate additional +2 Water this turn | 1 per surplus garrison set | —
+Bio Facility | T1 |  |  |  |  |  | 
+ |  | Harvest Food/Bio | Production | 2 Engineer | Generate +2 Food/Bio this turn | 1 per garrison set | —
+ |  | Boost Output | Production | 2 Engineer (surplus) | Generate additional +2 Food/Bio this turn | 1 per surplus garrison set | —
+Research Complex | T1 |  |  |  |  |  | 
+ |  | Generate Research | Research | 3 Innovator | Generate +2 Research this turn | 1 per garrison set | —
+ |  | Research Sprint | Research | 3 Innovator (surplus) | Generate additional +2 Research this turn | 1 per surplus garrison set | —
+ |  | Apply Research | Research | 3 Innovator | Spend accumulated Research to unlock a technology or tech-gated module | 1 per turn | Research cost varies by tech
+Commercial Hub | T1 |  |  |  |  |  | 
+ |  | Amplify Credit Yield | Economic | 2 Administrator | All Administrators subdivision-wide generate +1 bonus Cr this turn | 1 per turn | —
+Habitat Module | T1 |  |  |  |  |  | 
+ |  | Colonist Processing | Logistics | 1 Administrator | Arriving colonists this turn are processed and immediately available | 1 per turn | —
+Headquarters | T1 |  |  |  |  |  | 
+ |  | Colonist Requisition | Logistics | 1 Administrator | Order up to 5 colonists of specified type from Earth; arrive in 3 turns | 1 per Admin garrison set | 5 Cr per colonist + 2 Cr fee
+ |  | Territorial Claim | Logistics | 1 Administrator | Register a hex claim; activates territory income for that hex | 1 per turn | —
+ |  | Command Coordination | Diplomatic | 2 Administrator | Grant one allied subdivision +1 action effectiveness this turn | 1 per turn | 3 Cr
+Warehouse | T1 |  |  |  |  |  | 
+ |  | Resource Transfer | Logistics | 2 Engineer | Move up to 20 resources between own buildings or to Landing Zone | 1 per Engineer garrison set | 1 Cr per 5 resources to/from Landing Zone
+ |  | Stockpile Audit | Logistics | 2 Engineer | Confirm exact resource totals across all own buildings; host verifies | 1 per turn | —
+Communications Array | T1 |  |  |  |  |  | 
+ |  | Passive Intel Scan | Intelligence | 2 Analyst | Report all unit presence in hexes within array range this turn | 1 per turn | —
+ |  | Enhanced Surveillance | Intelligence | 2 Analyst | Detailed report on one target subdivision: buildings, personnel estimate, resource bracket | 1 per turn | 2 Cr
+ |  | Broadcast | Diplomatic | 1 Administrator | Issue colony-wide statement to the public game thread | 1 per turn | 2 Cr
+Transit Hub | T1 |  |  |  |  |  | 
+ |  | Market Sale | Economic | 1 Administrator | Sell up to 10 resources at 2:1 rate (2 resources = 1 Cr) | 1 per Admin garrison set | —
+ |  | Resource Routing | Logistics | 2 Engineer | Transfer resources to any own building on the map at no cost this turn | 1 per Engineer garrison set | —
+Outpost | T0 |  |  |  |  |  | 
+ |  | Hold Territory | Defense | 2 Engineer | Maintain territorial claim on this hex; prevents rival claim | Passive — garrison required | —
+Vehicle Workshop | T1 |  |  |  |  |  | 
+ |  | Produce Vehicle | Production | 3 Engineer | Construct one vehicle unit per design submitted (see Vehicle Hull Classes & Vehicle Modules) | 1 per garrison set | Hull cost + module costs (see Vehicle Hull Classes)
+ |  | Repair Vehicle | Logistics | 2 Engineer | Restore a damaged vehicle to full operational status | 1 per Engineer garrison set | 2 Cr + 2 Min
+
+
+===== SHEET: Module Actions =====
+RED PLANET CORPORATE — MODULE ACTION REFERENCE |  |  |  |  |  |  | 
+Modules add new actions to their parent building or enhance existing ones. A module action requires the module to be installed AND the building to meet the module's additional garrison requirement. |  |  |  |  |  |  | 
+  MODULE ACTIONS |  |  |  |  |  |  | 
+Module | Available On | Action Unlocked | Type | Additional Garrison | Effect | Limit / turn | Cost
+Efficiency Module | Any Resource Generator | Optimized Harvest | Production | — (uses base garrison) | Resource harvest this turn generates +1 additional output on top of base | 1 per installed module | —
+Terrain Exploit | Extraction Site, Water Reclamation | Terrain Harvest | Production | +2 Engineer (specialist crew) | Generate +3 bonus resources this turn if building is on matching terrain hex | 1 per turn | —
+Expansion Module | Habitat Module | Extended Housing | Logistics | — | Increase personnel capacity by 3 for this turn only (emergency overflow housing) | 1 per installed module | —
+Expansion Module | Transit Hub | Extended Sell Cap | Economic | — | Increase Transit Hub sell cap by 5 resources per installed module | Passive — applies automatically | —
+Expansion Module | Communications Array | Extended Scan Range | Intelligence | — | Passive Intel Scan covers +1 additional hex radius per installed module | Passive — applies automatically | —
+Fortification | Outpost, HQ, Warehouse, Comms Array | Fortified Defense | Defense | +1 Contractor per installed module | Building gains +1 defense tier per Fortification module when Contractor is garrisoned; stacks | Passive — active when garrisoned | —
+Security Detail | All buildings except Power Conduit | Security Coverage | Defense | +1 Contractor | Building is protected against Analyst Sabotage unit actions this turn; attacker must overcome defense tier | Passive — active when garrisoned | —
+Operations Director | All buildings except Power Conduit, Outpost | Director Boost | Production | +1 Administrator | Building's primary output increases by +1 this turn; or one upkeep cost reduced by 1 | 1 per installed module | —
+Command Suite | Headquarters | Command Amplification | Diplomatic | +1 Administrator | All Administrator unit actions taken from this HQ this turn have +1 effectiveness tier | 1 per turn | —
+Command Suite | Communications Array | Intel Amplification | Intelligence | +1 Analyst | Enhanced Surveillance action this turn returns full detail: resource totals, unit types, module list | 1 per turn | 2 Cr
+Command Suite | Transit Hub | Logistics Amplification | Logistics | +1 Engineer | Resource Routing action this turn ignores the Transit Hub network requirement — can move resources to any owned building regardless of connection | 1 per turn | —
+Diplomatic Suite | Headquarters | Political Session | Diplomatic | 1 Administrator (garrisoned) | Enables Political Actions to be submitted from this HQ; required for Propose Motion and Form Agreement | Passive — unlocks Political Actions | —
+Diplomatic Suite | Communications Array | Public Broadcast | Diplomatic | 1 Administrator (garrisoned) | Broadcast action reaches colony-wide and is flagged as an official corporate communication in the public post | 1 per turn | 2 Cr
+Diplomatic Suite | Commercial Hub | Trade Rate Improvement | Economic | 1 Administrator (garrisoned) | Transit Hub sell rate improves to 1.5:1 (3 resources = 2 Cr) this turn for this subdivision | 1 per turn | —
+Trade Network | Transit Hub | Inter-Player Trade | Economic | +2 Administrator | Enables direct resource trades with other subdivisions; both parties must submit matching terms | Unlimited matching trades per turn | —
+Sensor Array | Extraction Site | Deposit Scan | Intelligence | +1 Analyst | Reveal all resource deposit types and quantities in adjacent hexes | 1 per turn | 1 Cr
+Sensor Array | Commercial Hub | Market Surveillance | Intelligence | +1 Analyst | Reveal one rival subdivision's current Credit total and Landing Zone activity this turn | 1 per turn | 1 Cr
+Sensor Array | Outpost, Headquarters | Territory Scan | Intelligence | +1 Analyst | Reveal all unit movements and actions in adjacent hexes this turn | 1 per turn | 1 Cr
+Research Link | Power Facility, Bio Facility, Research Complex, Habitat Module, Vehicle Workshop | Data Feed | Research | — (uses building's base garrison) | This building contributes +1 Research to the subdivision's pool this turn in addition to normal output | 1 per installed module | —
+Automation Module | All Resource Generators, Habitat Module, Research Complex, Commercial Hub | Automated Operation | Production | Reduces base garrison requirement by 1 Engineer or Innovator | Building can meet its Engineer/Innovator garrison requirement with 1 fewer unit of that type | Passive — permanent reduction | —
+Global Contribution | Bio Facility | Oxygen Generation | Field | — (uses building's base garrison) | Contribute +1 to colony-wide Oxygen parameter this turn; affects global habitability track | 1 per turn | —
+Hazard Shield | Power Facility, Extraction Site, Water Reclamation, Habitat Module, Power Conduit, Comms Array, Transit Hub, Vehicle Workshop | Hazard Mitigation | Defense | — | Building is immune to dust storm, radiation, and environmental event damage this turn | Passive — active when installed | —
+Redundant Systems | All Resource Generators, Habitat Module, Power Conduit, Warehouse, Transit Hub, HQ, Vehicle Workshop | Failsafe Activation | Defense | — | If building would be disabled by sabotage or event this turn, it instead operates at 50% output | Passive — triggers on damage event | —
+
+
+===== SHEET: Unit Actions =====
+RED PLANET CORPORATE — UNIT ACTION REFERENCE |  |  |  |  |  |  | 
+Unit actions are taken by individual available (ungarrisoned) units. Each unit may take one action per turn. Movement to the action location is implied. |  |  |  |  |  |  | 
+  UNIT ACTIONS |  |  |  |  |  |  | 
+Unit Type | Action | Type | Range | Building Required | Effect | Limit / turn | Cost / Notes
+Engineer |  |  |  |  |  |  | 
+Engineer | Construct Building | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None — Engineer travels to hex | Build one building at target hex; operational next turn | 1 per Engineer | Full build cost applies. Hex must be claimed (own Outpost/HQ).
+Engineer | Install Module | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Target building must exist at hex | Install one module on a target building; active next turn | 1 per Engineer | Full module cost applies.
+Engineer | Tier Upgrade | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Target building must exist at hex | Upgrade target building to next tier; additional slots available next turn | 1 per Engineer | Tier Upgrade module cost applies.
+Engineer | Place Outpost | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None — Engineer travels to hex | Claim an unclaimed hex by placing an Outpost; territorial income begins next turn | 1 per Engineer | 6 Min + 4 Cr. Hex must be unclaimed.
+Engineer | Survey Hex | Field | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None | Reveal terrain type and all resource deposits in target hex; reported privately by host | 1 per Engineer | Free. Can survey unclaimed hexes.
+Engineer | Demolish Building | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Own building must exist at hex | Remove a building; recover 50% of original Mineral build cost; modules lost | 1 per Engineer | Personnel at building reassigned to available pool.
+Engineer | Repair Building | Construction | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Own damaged building at hex | Restore a damaged or disabled building to full operational status | 1 per Engineer | 2 Cr + 2 Min. Building operational again next turn.
+Contractor |  |  |  |  |  |  | 
+Contractor | Patrol | Intelligence | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None | Reveal all unit movements and actions taken in target hex this turn; reported privately | 1 per Contractor | Detects available units only; garrisoned units not individually revealed.
+Contractor | Intercept | Defense | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None — Contractor must be at target hex | Attempt to block one rival unit action at target hex this turn; blocked action fails | 1 per Contractor | Host resolves vs. target investment differential. Contractor identity exposed on attempt.
+Contractor | Enforce Territory | Defense | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Own Outpost or HQ at hex preferred | Assert claim on contested hex; rival units present without Contractor response are treated as trespassing | 1 per Contractor | Host applies trespass penalty to rival if unchallenged.
+Contractor | Escort | Defense | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None | Protect one other available unit at same hex this turn; that unit's action cannot be Intercepted | 1 per Contractor | Contractor and escorted unit must declare same hex.
+Analyst |  |  |  |  |  |  | 
+Analyst | Field Surveillance | Espionage | Adjacent hex or Comms Array range | Own Comms Array in range preferred (extends reach) | Gather intel on a specific building or unit at target hex; returns type, modules, unit presence | 1 per Analyst | Free. Does not expose Analyst.
+Analyst | Sabotage | Espionage | Adjacent hex or Comms Array range | Own Comms Array in range preferred | Attempt to disable or reduce output of one target building for 1 turn | 1 per Analyst | Host resolves vs. Security Detail/Fortification investment. Analyst exposed on failure.
+Analyst | Counter-Intel | Defense | Own subdivision buildings only | Own Comms Array | Declare one own building immune to Analyst Sabotage this turn; all sabotage attempts against it fail | 1 per Analyst | 2 Cr. Must be declared in same turn submission.
+Analyst | Plant Intel | Espionage | Colony-wide | Own Comms Array | Submit false information about own subdivision for public record; persists until investigated | 1 per Analyst | 3 Cr. Host notes privately as false. Detected on successful rival Surveillance.
+Analyst | Investigate | Intelligence | Adjacent hex or Comms Array range | Own Comms Array in range preferred | Attempt to verify whether public information about a target subdivision is accurate or planted | 1 per Analyst | 2 Cr. Host confirms or reveals planted intel if present.
+Administrator |  |  |  |  |  |  | 
+Administrator | Trade Action | Economic | Any — Administrator travels to market | Transit Hub (full trade); Landing Zone accessible without building | Access multiple markets simultaneously: Landing Zone sale, Transit Hub sale, inter-player trade — all in one action | 1 per Administrator | Inter-player trades require matching submission from trade partner same turn.
+Administrator | Negotiate | Diplomatic | Colony-wide — diplomatic channel | HQ with Diplomatic Suite (formal agreements); HQ alone (informal proposals) | Formally propose a trade agreement, non-aggression pact, or alliance to another subdivision | 1 per Administrator | Other player must respond same or following turn. Host records formal agreements publicly.
+Administrator | Lobby | Diplomatic | Colony-wide | HQ with Diplomatic Suite | Spend Credits to add weight to an active colony vote; declared privately to host | 1 per Administrator | 3 Cr per additional vote weight. Host tallies after all submissions.
+Administrator | Denounce | Diplomatic | Colony-wide | HQ with Diplomatic Suite or Comms Array with Diplomatic Suite | Publicly accuse a rival of a specific action; target may respond publicly or let the accusation stand | 1 per Administrator | 2 Cr. False denunciations that are disproved are a purely social cost — visible to the colony, no mechanical penalty.
+Innovator |  |  |  |  |  |  | 
+Innovator | Field Research | Research | Adjacent hex, or any connected Transit Hub (see Map & Movement) | None | Conduct on-site research at target location; generate +1 Research and receive a location-specific insight from host | 1 per Innovator | Free. Insight may reveal unique hex properties, event hooks, or hidden resources.
+Innovator | Tech Consult | Research | Adjacent hex, or any connected Transit Hub (see Map & Movement) | Target building must exist at hex | Apply Innovator expertise to a building; that building's output increases by +1 this turn regardless of module loadout | 1 per Innovator | 2 Cr. Innovator must be at building's hex.
+
+
+===== SHEET: Action System Overview =====
+RED PLANET CORPORATE — ACTION SYSTEM |  |  |  |  |  | 
+Actions are divided into Building Actions and Unit Actions. Passive systems resolve automatically without player input. |  |  |  |  |  | 
+  GARRISON PHASE  —  Declared at the start of every turn submission |  |  |  |  |  | 
+Garrison Rules |  |  |  |  |  | 
+• Each player explicitly assigns units to buildings before actions are declared. |  |  |  | Garrisoning has no cost. It is simply the act of assigning units to locations. |  | 
+• Units not garrisoned are AVAILABLE and may take one Unit Action each this turn. |  |  |  | A garrisoned unit cannot take Unit Actions. It is occupied by the building. |  | 
+• A building requires specific unit types to be fully garrisoned to function. |  |  |  | Meeting the minimum Engineer garrison enables resource production and Engineer-dependent building actions. |  | 
+• Partial garrison enables only the actions supported by present unit types. |  |  |  | Example: Extraction Site needing 2 Eng + 1 Con with 2 Eng only → can harvest, cannot use Security Detail defense. |  | 
+• A building with surplus garrison (e.g. 4 Engineers where 2 are required) can take |  |  |  | multiple actions of the same type per turn, consuming 1 full garrison set per action. |  | 
+  BUILDING ACTIONS  —  The building acts; units are the enabler |  |  |  |  |  | 
+Building Action | Type | Unit Required | Building Required | Limit / turn | Effect | Notes
+Harvest Resources | Production | Engineer (full req.) | Any Resource Generator | 1 per garrison set | Generate base resource output for this turn | Building is dormant and produces nothing if Engineer requirement unmet.
+Boost Output | Production | Engineer (full req.) | Any Resource Generator | 1 per surplus garrison set | +2 to resource output this turn | Requires a second complete Engineer garrison set beyond the base requirement.
+Emergency Extraction | Production | Engineer (full req.) | Any Resource Generator | 1 per turn | Double resource output this turn; risk equipment damage event | Corporate Action equivalent for production buildings. Host rolls for damage.
+Passive Intel Scan | Intelligence | Analyst (full req.) | Communications Array | 1 per turn | Gather basic intel on all hexes within array range this turn | Automatic if Comms Array is fully staffed. Reports unit presence, not details.
+Enhanced Surveillance | Intelligence | Analyst (full req.) | Communications Array + Sensor Array module | 1 per turn | Detailed intel on one target subdivision: resource levels, building count, personnel estimate | Requires Sensor Array module installed and Analyst operator garrisoned.
+Broadcast | Diplomatic | Administrator | Comms Array + Diplomatic Suite | 1 per turn | Issue a colony-wide statement to the public game thread | Costs 2 Cr. Content submitted to host for public posting.
+Market Sale | Economic | Administrator | Transit Hub | 1 per Admin garrison set | Sell up to 10 resources at 2:1 rate (2 resources = 1 Cr) | Expansion Module increases sell cap. Operations Director improves rate. Additional Admin garrison sets allow additional Market Sale actions.
+Amplify Credit Yield | Economic | Administrator | Commercial Hub | 1 per turn | Each Administrator subdivision-wide generates +1 bonus Cr this turn | Requires Commercial Hub fully staffed. Effect applies to all Admins, not just those garrisoned here.
+Active Defense | Defense | Contractor | Any building with Security Detail or Fortification | 1 per Contractor garrison set | Building gains +1 defense tier this turn against Analyst sabotage or hostile unit actions | Stacks with passive module bonuses. Each Contractor garrison set adds one tier.
+Lockdown | Defense | Contractor | Any building with Security Detail | 1 per turn | Completely blocks all Analyst Unit Actions targeting this building this turn | Costs 3 Cr. Overrides all sabotage attempts regardless of Analyst investment.
+Research Sprint | Research | Innovator (full req.) | Research Complex | 1 per surplus Innovator garrison set | +2 Research output this turn | Requires surplus Innovator garrison beyond base requirement.
+Apply Research | Research | Innovator (full req.) | Research Complex | 1 per turn | Spend accumulated Research to unlock a technology or install a tech-gated module | Tech tree TBD. Host confirms unlock and applies effect.
+Colonist Requisition | Logistics | Administrator | Headquarters | 1 per Admin garrison set | Order X colonists of specified type from Earth; arrive in 3 turns | Cost: 5 Cr per colonist + 2 Cr processing fee per requisition action. Max 5 colonists per action.
+Resource Transfer | Logistics | Engineer | Warehouse or Transit Hub | 1 per Engineer garrison set | Move up to 10 resources between own buildings or to Landing Zone stockpile | Free between own buildings. Costs 1 Cr per 5 resources if moving to/from Landing Zone.
+  UNIT ACTIONS  —  Individual units act independently; one action per unit per turn |  |  |  |  |  | 
+Unit Action | Unit Type | Building Required | Range | Limit / turn | Effect | Notes
+Construct Building | Engineer | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Build one building at target hex | Engineer must be at target hex. Costs full building price. Building is operational next turn.
+Install Module | Engineer | Target building must exist | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Install one module on a target building | Costs full module price. Module active next turn. Engineer must be at building's hex.
+Tier Upgrade | Engineer | Target building must exist | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Upgrade target building to next tier | Costs Tier Upgrade module price. Engineer must be at building's hex.
+Place Outpost | Engineer | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Claim an unclaimed hex by placing an Outpost | Hex must be unclaimed. Outpost operational next turn. Costs 6 Min + 4 Cr.
+Survey Hex | Engineer | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Reveal terrain type and resource deposits in target hex | Results reported privately by host. Hex does not need to be claimed.
+Demolish | Engineer | Own building at target hex | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Engineer | Remove a building from own hex; recover 50% of build cost in Minerals | Modules are lost. Personnel reassigned to available pool.
+Patrol | Contractor | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Contractor | Reveal all unit movements and actions in target hex this turn | Results reported privately. Detects available units only — garrisoned units not revealed.
+Intercept | Contractor | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Contractor | Attempt to block a rival unit action in target hex this turn | Host resolves based on investment differential. Intercepted action fails; Contractor exposed.
+Enforce | Contractor | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Contractor | Assert territorial claim on a contested hex; challenge rival presence | If rival has no Contractor response, their units are treated as trespassing — host applies penalty.
+Field Surveillance | Analyst | None | Adjacent hex or any hex (Comms Array range) | 1 per Analyst | Gather intel on a specific building or unit in target hex | Returns building type, module count, and unit presence. Not full detail.
+Sabotage | Analyst | Target building must exist | Adjacent hex or any hex (Comms Array range) | 1 per Analyst | Attempt to disrupt a rival building; reduce output or disable for 1 turn | Host resolves vs. target's Security Detail/Fortification investment. Analyst exposed on failure.
+Counter-Intel | Analyst | Own Comms Array | Comms Array range | 1 per Analyst | Protect own buildings from Analyst sabotage this turn | Declares one building as protected. Sabotage attempts against it automatically fail this turn.
+Plant Intel | Analyst | None | Adjacent hex or any hex (Comms Array range) | 1 per Analyst | Submit false information to host about own subdivision for public record | Host notes privately. Public standings show planted data until discovered.
+Trade Action | Administrator | Transit Hub (for full trade) | Any — Administrator travels to market | 1 per Administrator | Access multiple markets in one action: Landing Zone sale, Transit Hub sale, inter-player trade | Sub-actions declared together. Inter-player trades require matching submission from trade partner.
+Negotiate | Administrator | HQ with Diplomatic Suite | Any — diplomatic channel | 1 per Administrator | Formally propose a trade agreement, non-aggression pact, or alliance to another player | Other player must respond in same or following turn. Host records formal agreements.
+Lobby | Administrator | HQ with Diplomatic Suite | Colony-wide | 1 per Administrator | Spend Credits to influence an active colony vote | Costs 3 Cr per vote weight added. Declared privately; host tallies after all submissions.
+Field Research | Innovator | None | Adjacent hex, or any connected Transit Hub (see Map & Movement) | 1 per Innovator | Conduct research at a target location; generate +1 Research and a location-specific insight | Insight reported privately by host — may reveal unique hex properties or event hooks.
+  POLITICAL ACTIONS  —  1 per subdivision per turn; colony-level decisions |  |  |  |  |  | 
+Political Action | Requirement | Cost | Limit | Effect | Resolution | Notes
+Public Statement | HQ with Diplomatic Suite or Comms Array | 2 Cr | 1/turn | Issue a colony-wide public statement, posted by the host | Host posts publicly in game thread | Content must be in-character. Can be used for propaganda or information.
+Propose Motion | HQ with Diplomatic Suite | 3 Cr | 1/turn | Submit a colony-wide vote; all subdivisions must respond next turn | Host tallies votes; simple majority passes | Motion types: resource allocation, colony rule, joint project, sanctions.
+Form Agreement | HQ with Diplomatic Suite | 0 Cr | 1/turn | Establish a formal trade agreement, non-aggression pact, or alliance with another subdivision | Both players must submit matching agreement terms; host records publicly | Diplomacy is intentionally unmechanized — formal agreements carry social weight only. Breaking one has no automatic mechanical penalty, but is visible to the colony since the agreement was posted publicly.
+Denounce | HQ with Diplomatic Suite or Comms Array | 2 Cr | 1/turn | Publicly accuse a rival of a specific action; target may respond publicly or let the accusation stand | Host adjudicates based on evidence submitted | False denunciations that are disproved are a purely social cost to the accuser — no mechanical penalty, but visible to the whole colony.
+Appeal to Earth | HQ | 5 Cr (costs 3 Earth Relations — see Earth Relations sheet) | 1/turn | Request an emergency resource drop from the parent company; receive 10 of one resource next turn | Host confirms; Earth Relations track decremented | Earth Relations is tracked per-subdivision, not shared — this action only drains your own track. See Earth Relations sheet.
+Vote on Motion | Any — response to active motion | 0 Cr | 1 per active motion | Cast subdivision vote on an active colony motion | Submitted privately; host tallies all votes simultaneously | Abstaining counts as a neutral vote. Lobbying (Administrator unit action) can add weight.
+  CORPORATE ACTIONS  —  1 per subdivision per turn; parent company interventions |  |  |  |  |  | 
+Corporate Action | Available To | Cost | Requirement | Effect | Resolution | Notes
+Expedited Delivery | All | 5 Cr | Active Requisition order this turn | Colonists ordered this turn arrive 1 turn early (2 turns instead of 3) | Host adjusts arrival schedule | Can only be applied to same-turn requisitions.
+Emergency Resupply | All | 8 Cr | HQ operational | Receive 8 of any one resource from parent company next turn | Host delivers to HQ hex | Represents parent company emergency budget. Draws from Earth Relations track (-1).
+Corporate Audit | All | 4 Cr | Administrator available | Force one target subdivision to publicly reveal their stored resource totals this turn | Host posts target's resource totals publicly | Target is notified. Cannot be blocked unless target has Counter-Intel active.
+Hostile Acquisition | All | 10 Cr | Administrator available + target has listed personnel | Attempt to poach one unit from a rival subdivision | Host resolves — target may counter-bid; highest bid wins | Poached unit becomes available to buyer next turn. Target loses that unit permanently.
+Black Market Sale | All | 2 Cr fee | Any resource stockpile | Sell up to 6 resources outside Landing Zone cap at standard 3:1 rate | Host processes immediately; bypasses colony sell cap | Taxed at 2 Cr flat fee. Useful when Landing Zone cap is contested.
+Disinformation Campaign | All | 5 Cr | Comms Array operational | Plant false public information about colony conditions or rival standings | Host posts fabricated data publicly; noted privately as false | Persists until another player successfully investigates and publicly disputes it.
+Accelerated Growth | Terra Agricultural Syndicate only | 4 Cr | Bio Facility operational | Bio Facility produces +4 Food/Bio this turn in addition to normal output | Host applies bonus to resource totals | Company-specific. Reflects Terra's agricultural specialization.
+Deep Vein Survey | Unified Mining Consortium only | 4 Cr | Extraction Site operational | Reveal all resource deposits in a 2-hex radius around target Extraction Site | Host reports deposits privately | Company-specific. Represents UMC's geological survey capabilities.
+Priority Routing | Stellar Dynamics Corporation only | 4 Cr | Transit Hub operational | All resource transfers and sales this turn have zero cost and no sell cap | Host waives all transfer fees and ignores sell cap this turn | Company-specific. Reflects Stellar's logistics network.
+Breakthrough Research | Helix Pharmaceutical Group only | 4 Cr | Research Complex operational | Generate +6 Research this turn | Host adds Research to totals | Company-specific. Represents Helix's R&D acceleration capability.
+Security Sweep | Omega Security Solutions only | 4 Cr | HQ operational | All own buildings immune to Analyst sabotage this turn; reveal identity of any Analyst that attempted sabotage | Host confirms immunity and privately identifies any sabotage attempts | Company-specific. Represents Omega's security intelligence network.
+Tech Integration | Genesis Tech Industries only | 4 Cr | Any building with a Research Link module | All Research Link modules produce double output this turn | Host applies bonus to Research totals | Company-specific. Reflects Genesis's systems integration advantage.
+  PASSIVE SYSTEMS  —  Resolved automatically by host each turn; no player input required |  |  |  |  |  | 
+Passive System | Trigger | Effect | Notes |  |  | 
+Resource Generation | Building garrisoned with minimum Engineer requirement |  | Base resource output added to stockpile each turn |  | No action required. Building must be staffed to generate. | 
+Building Upkeep | All buildings, regardless of garrison |  | Upkeep costs deducted from stockpile each turn |  | Buildings cost upkeep even when dormant. Demolish to stop upkeep. | 
+Personnel Upkeep | All personnel, garrisoned or available |  | Food, Water, Credits, Energy, Research deducted per unit type |  | See Personnel Reference sheet for per-type costs. | 
+Administrator Income | Each Administrator unit, anywhere |  | +2 Cr per Administrator per turn added to stockpile |  | Passive. Does not require action. Commercial Hub adds +1 bonus on top. | 
+Territory Income | HQ operational |  | +1 Cr per claimed hex (Outpost or HQ) per turn |  | Passive. Scales with map expansion. | 
+Colonist Arrival | 3 turns after Requisition building action |  | Ordered personnel added to available pool at HQ |  | Host announces arrival. Units available for garrison/action same turn they arrive. | 
+Research Accumulation | Research Complex garrisoned with minimum Innovator requirement |  | Research output added to stockpile each turn |  | Passive. No action required beyond garrison. | 
+Action Effect Expiry | End of each turn |  | All single-turn effects (Boost Output, Active Defense, Lockdown, etc.) expire |  | Effects declared this turn are active this turn only unless stated otherwise. | 
+  CONFLICT RESOLUTION  —  Host judgment based on investment differential |  |  |  |  |  | 
+Conflict Type | Attacker | Defender/Resolution | Outcome |  |  | 
+Sabotage vs. Defense | Attacker: Analyst unit action (Sabotage). Defender: Garrisoned Contractors + Security Detail/Fortification modules. |  | Host compares total Analyst investment (number of Analysts, Comms Array modules) against total defensive investment (Contractors, Security Detail stacks, Fortification stacks). |  | Large differential → deterministic outcome favoring stronger side. Close differential → host applies minor random element. Attacker exposed on failure. | 
+Patrol/Intercept vs. Unit Action | Contractor Intercept targets a rival unit action in the same hex. |  | Host compares Contractor count against target unit type. Contractors are effective against all unit types. |  | Successful intercept nullifies the target action. Contractor is revealed and cannot act again this turn. | 
+Territorial Dispute | Two subdivisions both claim or contest the same hex. |  | Host compares total Contractor presence + Fortification investment on each side. |  | Stronger side holds the hex. Weaker side's units are displaced to nearest owned hex. No permanent unit loss. | 
+Trade Matching | Inter-player trades via Trade Network. |  | Both players must submit exactly matching terms in the same turn submission. |  | Host confirms match and processes. Non-matching terms are voided — neither side transacts. | 
+
+
+===== SHEET: Turn Submission Template =====
+RED PLANET CORPORATE — TURN SUBMISSION TEMPLATE | 
+  TURN METADATA | 
+Subdivision Name: | [Your subdivision name]
+Turn Number: | [Turn #]
+Player: | [Your name/handle]
+Submitted To: | [Host name] — private message
+  SECTION 1: GARRISON ASSIGNMENTS | 
+Format: | List each unit type and which building they are assigned to. Unassigned units are available for actions.
+Example — Engineers: | 3x Engineer → Extraction Site (Hex B3) | 2x Engineer → Bio Facility (Hex B2) | 2x Engineer → AVAILABLE
+Example — Admins: | 2x Administrator → HQ (Hex A1) | 1x Administrator → AVAILABLE
+Example — Contractors: | 1x Contractor → HQ (Hex A1) | 1x Contractor → AVAILABLE
+Example — Innovators: | 3x Innovator → Research Complex (Hex C3) | 0x AVAILABLE
+Example — Analysts: | 2x Analyst → Comms Array (Hex B1) | 1x Analyst → AVAILABLE
+  SECTION 2: BUILDING ACTIONS | 
+Format: | List each building action. Building must be fully staffed by declared garrison above.
+Example: | Extraction Site (Hex B3) — Harvest Resources [2x Engineer garrison]
+Example: | Extraction Site (Hex B3) — Boost Output [surplus 2x Engineer garrison]
+Example: | HQ (Hex A1) — Colonist Requisition: 3x Engineer, 1x Analyst [2x Admin garrison] — ETA Turn 5
+Example: | Comms Array (Hex B1) — Passive Intel Scan [2x Analyst garrison]
+Example: | Transit Hub (Hex A2) — Market Sale: Sell 10 Minerals [Admin garrison] — expected 5 Cr
+  SECTION 3: UNIT ACTIONS | 
+Format: | List each available unit action. State unit type, action, and target hex/building.
+Example: | Engineer [AVAILABLE] — Construct: Power Facility at Hex C1
+Example: | Engineer [AVAILABLE] — Place Outpost at Hex D4
+Example: | Analyst [AVAILABLE] — Sabotage: Target Rival X's Extraction Site at Hex E3
+Example: | Administrator [AVAILABLE] — Trade Action: Sell 6 Food at Landing Zone (2 Cr) + Trade 4 Water to [Player Y] for 4 Minerals via Trade Network
+Example: | Contractor [AVAILABLE] — Patrol: Hex D3
+Note on movement: | Units are assumed to be at their action location. A unit at a connected Transit Hub may jump to any other hub in that network (see Map & Movement). Otherwise units must be adjacent.
+  SECTION 4: POLITICAL ACTION  (1 per subdivision per turn) | 
+Format: | Declare one Political Action or write NONE.
+Example: | Public Statement: [in-character statement text for host to post publicly]
+Example: | Propose Motion: Increase Landing Zone sell cap to 20 resources/turn — open colony vote
+Example: | Form Agreement: Non-aggression pact with [Player Y] — matching terms submitted by both parties
+Example: | NONE — no political action this turn
+  SECTION 5: CORPORATE ACTION  (1 per subdivision per turn) | 
+Format: | Declare one Corporate Action or write NONE.
+Example: | Expedited Delivery — apply to Requisition order submitted in Section 2
+Example: | Black Market Sale — sell 6 Research at 3:1 rate (2 Cr), bypassing Landing Zone cap
+Example: | [Company-specific action] — [effect]
+Example: | NONE — no corporate action this turn
+  SECTION 6: NOTES TO HOST | 
+Format: | Any clarifications, contingency instructions, or questions for the host.
+Example: | If my Sabotage against Rival X's Extraction Site fails, do NOT expose my Analyst — I prefer to lose the action quietly.
+Example: | If the Outpost placement at Hex D4 is contested, I yield — do not trigger a territorial dispute.
+Example: | Trade offer to [Player Y]: 4 Water for 4 Minerals — if they did not submit matching terms, void the trade.
+
+
+===== SHEET: Vehicle Hull Classes =====
+RED PLANET CORPORATE — VEHICLE SYSTEM |  |  |  |  |  | 
+Vehicles are built at the Vehicle Workshop using a hull + module system, similar to building modules. Vehicles are crewed by existing personnel, not a separate unit type — they act as force multipliers. |  |  |  |  |  | 
+  HULL CLASSES |  |  |  |  |  | 
+Hull Class | Slots | Build Cost | Crew Req. | Upkeep | Role / Profile | Notes
+Light | 2 | 8 Min + 6 Cr | 1 | 1 Cr / turn | Fast, cheap, single-purpose. Scouting, light escort, quick-response. | Best for early game or specialist roles. Can be produced quickly and in volume.
+Medium | 4 | 16 Min + 12 Cr | 2 | 2 Cr / turn | Balanced workhorse. Hauling, patrol, multi-role field support. | The default general-purpose hull. Most flexible slot-to-cost ratio.
+Heavy | 6 | 28 Min + 22 Cr | 3 | 4 Cr / turn | Slow, powerful, multi-role. Heavy combat, bulk hauling, mobile command. | Significant investment. Crew requirement makes heavy hulls a real personnel commitment.
+  CREWING RULES |  |  |  |  |  | 
+Who can crew | Any existing personnel type (Engineer, Contractor, Administrator, Innovator, Analyst) may crew a vehicle. No new unit type is created. |  |  |  |  | 
+Crew assignment | Crewing a vehicle is a Garrison-equivalent assignment — declared in the turn's Garrison Phase alongside building assignments. |  |  |  |  | 
+Crewed unit status | A crewed unit is treated as AVAILABLE for action purposes, but acts through the vehicle. The vehicle's modules and hull determine what action the crew can take and how effective it is. |  |  |  |  | 
+Module-crew matching | Most modules are most effective when crewed by their thematically matching personnel type (a Weapon Module crewed by a Contractor, a Sensor Module crewed by an Analyst) — see Module reference for specifics. Mismatched crew can still operate the vehicle, but does not receive the role bonus. |  |  |  |  | 
+Vehicle loss | If a vehicle is destroyed or disabled in conflict, crew is NOT lost — they return to the available pool next turn, shaken but alive. Only the vehicle and its installed modules are lost. |  |  |  |  | 
+  CONSTRUCTION & DESIGN PROCESS |  |  |  |  |  | 
+1. Design | Player selects a hull class and fills available slots with modules (predefined or custom-proposed). |  |  |  |  | 
+2. Submit | Vehicle design submitted to host with hull, modules, and total cost calculated. |  |  |  |  | 
+3. Host Review | For custom/freeform modules, host confirms balance and assigns final cost/effect if not already covered by the predefined list. |  |  |  |  | 
+4. Build | Vehicle Workshop "Produce Vehicle" building action constructs the design. Costs hull cost + sum of module costs. |  |  |  |  | 
+5. Name & Flavor | Player names the vehicle and writes flavor text. Purely cosmetic but encouraged for immersion. |  |  |  |  | 
+
+
+===== SHEET: Vehicle Modules =====
+VEHICLE MODULES — PREDEFINED EXAMPLES (vague by design) |  |  |  |  |  | 
+Each predefined module is intentionally vague — it names a category and cost band, not a specific stat block. Players describe what the module does within the band; host confirms exact effect. Players may also propose fully custom modules within these cost bands. |  |  |  |  |  | 
+Category | Module Name (example) | Slot Cost | Build Cost | Vague Effect Guideline | Best Crew | Notes
+Cargo | Hauling Rig | 1 slot | 4 Min + 3 Cr | Increases the vehicle's resource carrying capacity by a moderate amount. Larger rigs (2-slot version) carry proportionally more. | Engineer | Scales with hull — a Heavy hull with multiple Hauling Rigs becomes a serious bulk transport.
+Cargo | Reinforced Hold | 2 slots | 8 Min + 6 Cr | Substantially increases carrying capacity and protects cargo from loss during hostile encounters. | Engineer | Higher cost variant of Hauling Rig — for players who want a dedicated hauler build.
+Weapon | Light Armament | 1 slot | 6 Cr + 2 Research | Gives the vehicle a meaningful but limited offensive capability — enough to contest a hex or defend itself, not enough to dominate one. | Contractor | Exact form (kinetic, directed energy, etc.) is player's choice — host balances the number, not the flavor.
+Weapon | Heavy Armament | 2-3 slots | 14 Min + 12 Cr + 4 Research | A serious offensive capability — this vehicle can meaningfully contest or win a territorial dispute on its own. | Contractor | High investment. Likely the centerpiece of a dedicated combat vehicle design.
+Sensor | Field Scanner | 1 slot | 4 Cr + 3 Research | Extends the vehicle's effective intel-gathering range and quality when performing Surveillance or Patrol actions. | Analyst | Stacks loosely with Comms Array range bonuses if vehicle is within array coverage.
+Sensor | Deep Array | 2 slots | 8 Cr + 6 Research | Significantly extends detection range and may reveal information normally hidden (planted intel, disguised units). | Analyst | Strong but slot-expensive. Best on a hull with few other priorities.
+Mobility | Upgraded Drivetrain | 1 slot | 4 Min + 4 Cr | Increases the vehicle's effective range per turn beyond the hull's base movement, and improves terrain handling. | Engineer | Represents better suspension, traction systems, or propulsion — player's narrative choice.
+Mobility | Long-Range Propulsion | 2 slots | 8 Min + 8 Cr | Substantially increases range — potentially allowing operation far beyond normal Engineer/Contractor/Analyst reach without a Transit Hub. | Any | The closest thing to a 'free roam' module. Strong utility for exploration-focused designs.
+Utility | Mobile Workshop | 2 slots | 6 Min + 6 Cr + 2 Research | Allows the vehicle to perform a limited version of one Engineer building action (e.g. Repair Building) while in the field. | Engineer | Player specifies which building action it replicates; host balances scope.
+Utility | Mobile Relay | 2 slots | 6 Cr + 4 Research | Allows the vehicle to perform a limited version of one Comms Array action (e.g. Passive Intel Scan) from its current location. | Analyst | Useful for projecting intelligence reach beyond fixed Comms Array coverage.
+Utility | Command Module | 2 slots | 6 Cr + 4 Research | Allows the vehicle to perform a limited version of one Administrator action (e.g. local Trade Action) while in the field. | Administrator | Represents a mobile field office. Good for subdivisions with scattered territory.
+Defense | Plating | 1 slot | 5 Min + 3 Cr | Increases the vehicle's resilience against hostile actions and environmental hazards — harder to disable or destroy. | Any | Generic defensive investment. Stacks for a tankier build.
+Defense | Active Countermeasures | 2 slots | 8 Min + 6 Cr + 3 Research | Gives the vehicle a chance to actively resist or deflect a hostile action targeting it, rather than just absorbing damage. | Contractor | More sophisticated than Plating — represents active defense systems rather than passive armor.
+  DESIGNING CUSTOM MODULES |  |  |  |  |  | 
+Cost Bands by Slot Size | 1 slot ≈ 4-6 Cr equivalent | 2 slots ≈ 8-12 Cr equivalent | 3 slots ≈ 14-20 Cr equivalent. Resource type (Min/Cr/Research) shifts based on module theme — combat-leaning skews Research, cargo-leaning skews Minerals. |  |  |  |  | 
+Pitch Format | Player describes: what the module does, what category it belongs to (Cargo/Weapon/Sensor/Mobility/Utility/Defense), how many slots it should cost, and what crew type fits best. |  |  |  |  | 
+Host's Job | Confirm the slot cost matches the power level requested, assign a build cost using the bands above, and note any restrictions (hull class limits, crew requirements). |  |  |  |  | 
+Power Ceiling | No single module should let a Light hull outperform a dedicated Heavy combat hull, or let any vehicle fully replace a building's core function — vehicles extend reach and flexibility, they don't replace infrastructure. |  |  |  |  | 
+
+
+===== SHEET: Map & Movement =====
+RED PLANET CORPORATE — MAP & MOVEMENT RULES |  |  |  |  |  | 
+12x8 hex grid. Units move to adjacent hexes for free as part of declaring an action there. Transit Hubs form a node-to-node network, not map-wide reach. Terrain affects movement cost and resource bonuses. |  |  |  |  |  | 
+  TERRAIN TYPES & MOVEMENT COST |  |  |  |  |  | 
+Terrain | Symbol | Movement Cost | Resource Bonus | Construction | Notes | 
+Plains | P | 1 hex (standard) | None | Standard cost | Default terrain. No bonus, no penalty. Most of the map. | 
+Colony Expansion Area | C | 1 hex (standard) | None | Standard cost | Prime building locations near the Landing Zone — no inherent bonus, just well-positioned. | 
+Mountains | M | 2 hexes (costs an extra unit of movement) | Mineral Extraction Terrain Exploit | +50% Mineral build cost | A unit entering a Mountain hex uses its entire movement for the turn — cannot continue to an adjacent hex after. Engineers from Transit Hub unaffected (already unlimited range). | 
+Ice Deposit | I | 1 hex (standard) | Water Reclamation Terrain Exploit | Standard cost | No movement penalty despite resource specialization. | 
+Rare Minerals | R | 2 hexes (costs an extra unit of movement) | Enhanced Extraction Site output (+1 above standard Terrain Exploit) | +50% Mineral build cost | Treated as a Mountain-tier terrain for movement purposes — rare resources are in difficult terrain. | 
+Volcanic Vent | V | 1 hex (standard) | Power Facility Terrain Exploit | Standard cost | No movement penalty. | 
+Water Reserve | W | 1 hex (standard) | Major Water Reclamation bonus (above standard Terrain Exploit) | Standard cost | Larger-scale version of Ice Deposit bonus. | 
+Landing Zone | L | 1 hex (standard) | None — unclaimable | No construction permitted | All Earth transfers occur here. Cannot be claimed by any subdivision. Always freely accessible to all players regardless of borders. | 
+Impassable Terrain | ~ | Cannot be entered | None | No construction permitted | Chasms, extreme slopes, or unstable ground. Units must path around. Vehicles with Long-Range Propulsion still cannot cross — impassable means impassable. | 
+  MOVEMENT RULES |  |  |  |  |  | 
+Rule | Detail |  |  |  |  | 
+Base movement | All units may move to one adjacent hex per turn as part of declaring an action there. Movement is not a separate action. |  |  |  |  | 
+Difficult terrain | Entering a Mountain or Rare Minerals hex consumes a unit's entire movement for the turn. A unit cannot enter difficult terrain and then continue to another hex in the same turn — it must stop and act there, or simply move there with no action. |  |  |  |  | 
+Impassable terrain | Units cannot enter impassable hexes under any circumstances, including vehicles with Long-Range Propulsion. Pathing must route around. |  |  |  |  | 
+Vehicle movement — standard | A crewed vehicle with no Mobility modules follows the same adjacency rules as its crew would on foot. |  |  |  |  | 
+Vehicle movement — Upgraded Drivetrain | Grants 2-hex range per turn instead of 1. Does not override difficult terrain's movement-consuming effect. This is a flat range boost independent of the Transit Hub network. |  |  |  |  | 
+Vehicle movement — Long-Range Propulsion | Grants a fixed extended radius of 4 hexes per turn. Independent of and stacks with Transit Hub network access if the vehicle also happens to be at a connected hub. |  |  |  |  | 
+Landing Zone access | The Landing Zone is always freely accessible to all units regardless of borders, spotting risk, or territorial claims. It is neutral ground by design, and its permanent Transit Hub is the universal network anchor — see Transit Hub Network section below. |  |  |  |  | 
+  TRANSIT HUB NETWORK |  |  |  |  |  | 
+Element | Detail |  |  |  |  | 
+What it is | Transit Hubs do not grant map-wide reach. Instead, each Transit Hub is a node. A unit located in the same hex as a connected Transit Hub may instantly jump to any other connected hub in that network and act from there this turn. |  |  |  |  | 
+No garrison required | Transit Hub network access is structural, not personnel-based. A unit does not need to be assigned/garrisoned to the hub — simply being in that hex when declaring an action is enough to use the network. |  |  |  |  | 
+Landing Zone anchor | The Landing Zone hosts a permanent Transit Hub that every subdivision can always use, regardless of network ownership. It is the one universal node every player's network effectively connects to. |  |  |  |  | 
+Minimum network size | A single player-owned Transit Hub is already useful — combined with the Landing Zone hub, it forms a usable 2-node network from turn one of having any Transit Hub built. |  |  |  |  | 
+Own network | All Transit Hubs owned by a single subdivision are automatically connected to each other and to the Landing Zone hub. A subdivision with 3 Transit Hubs has a 4-node network (3 own hubs + Landing Zone) that any unit can use freely from any one of those hexes. |  |  |  |  | 
+Rival network access | A subdivision's Transit Hub network is private by default. Granting a rival access is a social/diplomatic outcome — typically the result of a Negotiate (Administrator unit action). No separate mechanic or cost is defined; the terms are whatever the two players agree to. |  |  |  |  | 
+Revoking access | Since granted access has no formal mechanic, revoking it is equally informal — simply a matter of one player declaring the arrangement over. Players should expect this to be tracked socially, not by the host. |  |  |  |  | 
+Vehicle use of network | Vehicles use the Transit Hub network exactly like personnel — if a vehicle is in a connected hub's hex, it may jump to any other connected hub. This stacks independently with any Mobility module range bonus the vehicle has for its non-network movement. |  |  |  |  | 
+  CLOSED BORDERS & SPOTTING MECHANIC |  |  |  |  |  | 
+Element | Detail |  |  |  |  | 
+What "closed borders" means | A subdivision may declare its territory closed to a specific rival (or to all rivals) as a standing instruction to the host. Closed borders do not physically block movement — they activate the spotting mechanic on any unit that crosses without permission. |  |  |  |  | 
+Base spotting chance | 20% chance per unit per turn that a unit moving through closed rival territory is spotted, checked by the host at the moment the action resolves. |  |  |  |  | 
+Fortification modifier | Each Fortification module installed on a building in the territory adds +10% to the spotting chance for units passing through that hex or any hex adjacent to the fortified building. |  |  |  |  | 
+Analyst modifier | Analyst units have a -10% modifier to their own spotting chance, reflecting their training in stealth and infiltration. This stacks with Fortification modifiers on the defending side — the two are calculated independently before combining. |  |  |  |  | 
+Vehicle modifier | A vehicle entering closed territory uses the spotting chance of its crew's unit type, not a separate vehicle-specific roll. A vehicle crewed by an Analyst gets the Analyst's stealth modifier. |  |  |  |  | 
+Transit Hub jumps and spotting | Jumping into a connected Transit Hub does not trigger a spotting check by itself — the network only connects a subdivision's own hubs and the Landing Zone, none of which require crossing closed rival territory. Spotting only applies to adjacency-based movement through a rival's claimed hexes. |  |  |  |  | 
+On a successful crossing (not spotted) | The unit completes its action normally. The territory owner is not notified anything happened. |  |  |  |  | 
+On being spotted | The unit is CAPTURED — immediately removed from play and held by the territory-owning subdivision. The unit does not take its declared action. The unit's owner is notified of the capture by the host. |  |  |  |  | 
+Resolving a capture | A captured unit remains held until the two players negotiate a resolution directly — release, trade, ransom, or any other terms they agree to. The host does not impose a default resolution; this is intentionally left to player diplomacy. |  |  |  |  | 
+No resolution reached | If no resolution is reached, the unit remains captured indefinitely. It does not count toward either subdivision's available personnel, Garrison, or scoring categories while held. |  |  |  |  | 
+  SPOTTING CHANCE — WORKED EXAMPLES |  |  |  |  |  | 
+Scenario | Base | Modifiers | Final Chance |  |  | 
+Engineer crosses closed territory, no Fortification present | 20% | None | 20% |  |  | 
+Engineer crosses closed territory, target hex has 2x Fortification | 20% | +10% x2 | 40% |  |  | 
+Analyst crosses closed territory, no Fortification present | 20% | -10% (Analyst) | 10% |  |  | 
+Analyst crosses closed territory, target hex has 2x Fortification | 20% | -10% (Analyst) +20% (2x Fort) | 30% |  |  | 
+Vehicle crewed by Contractor crosses, 1x Fortification present | 20% | +10% (1x Fort) | 30% |  |  | 
+
+
+===== SHEET: Event System Overview =====
+RED PLANET CORPORATE — EVENT SYSTEM |  |  |  |  |  | 
+Each turn carries a small random chance of an event. Events are scoped (Colony-wide / Regional / Subdivision) and toned (Hazard / Opportunity / Neutral) to keep Mars feeling alive rather than purely hostile. |  |  |  |  |  | 
+  FREQUENCY & ROLL MECHANICS |  |  |  |  |  | 
+Mechanic | Roll / Chance | Notes |  |  |  | 
+Base chance per turn | 15% chance an event triggers each turn | Host rolls privately (or with a visible dice roll for transparency) at the start of turn processing. |  |  |  | 
+Scope roll | If triggered: roll for scope — 20% Colony-wide / 35% Regional / 45% Subdivision | Colony-wide events are rarer and more impactful; Subdivision events are common and personal. |  |  |  | 
+Tone roll | If triggered: roll for tone — 40% Hazard / 30% Opportunity / 30% Neutral | Slight hazard lean keeps stakes real, but opportunities and neutral flavor are common enough to matter. |  |  |  | 
+Subdivision targeting | For Subdivision-scope events, host selects target — either random among all players, or weighted toward subdivisions with relevant risk factors (e.g. no Hazard Shield installed, used Emergency Extraction last turn) | Weighting toward risk factors makes player decisions matter — under-investing in Redundant Systems/Hazard Shield has a real (if small) consequence. |  |  |  | 
+Regional targeting | Host selects a hex cluster — typically centered on a contested area, a specific terrain type, or wherever creates the most interesting fallout | Can affect multiple subdivisions if their territory overlaps the region. |  |  |  | 
+  ACTION-TRIGGERED RISK  —  Beyond ambient random events |  |  |  |  |  | 
+Trigger | Risk | Mitigation |  |  |  | 
+Emergency Extraction (Building Action) | Flat 25% chance of equipment damage event on the building used |  |  | None — this is the inherent risk/reward of the action |  | 
+Building with no Redundant Systems / Hazard Shield | +10% chance of being selected as Subdivision-scope event target if one triggers |  |  | Install Redundant Systems or Hazard Shield to remove this weighting |  | 
+Unstaffed/dormant building 3+ turns | +15% chance of being selected as Subdivision-scope event target; also drains Earth Relations (Mismanagement Event) |  |  | Garrison the building or Demolish it if no longer needed |  | 
+Vehicle without Plating/Countermeasures in contested territory | +15% chance of being targeted if a Regional event triggers in that hex |  |  | Install a Defense-category module |  | 
+
+
+===== SHEET: Colony-Wide Events =====
+COLONY-WIDE EVENTS  —  Affect every subdivision simultaneously |  |  |  | 
+Roll | Event | Tone | Effect | Notes
+1 | Planetary Dust Storm Season | Hazard | All buildings without Hazard Shield produce -1 output this turn (minimum 0). Lasts 2 turns. | Classic Mars hazard. Hazard Shield fully negates.
+2 | Solar Flare | Hazard | All Communications Array and Sensor Array operations are disrupted this turn — no Intelligence-type actions can be taken colony-wide. | Affects everyone equally regardless of investment — a true equalizer event.
+3 | Earth Supply Convoy Arrives | Opportunity | All subdivisions may immediately purchase up to 10 resources of any single type at a 1:1 Credit rate (better than normal rates), once each. | One-time window — must be used same turn or lost.
+4 | Atmospheric Processing Breakthrough | Opportunity | All Bio Facilities colony-wide produce +1 Food/Bio this turn as a shared technological benefit from the colony's collective Oxygen progress. | Rewards collective Global Contribution investment across all players.
+5 | Micrometeorite Shower | Hazard | Roll once per subdivision: 30% chance a random unshielded building takes minor damage (disabled 1 turn). | Hazard Shield fully negates for that building.
+6 | Quiet Skies | Neutral | Nothing of mechanical note occurs. Host may post brief flavor text about colony life. | Pure narrative beat — pacing breather.
+7 | Inter-Colony Communications Festival | Neutral | Colony-wide social event — Political Actions cost -1 Credit this turn for all players. | Mild economic flavor encouraging diplomatic activity.
+8 | Equipment Recall Notice | Hazard | One random module type colony-wide is temporarily less effective this turn (host selects, e.g. 'all Efficiency Modules produce half bonus this turn'). | Represents a batch manufacturing defect from Earth — out of any player's control.
+
+
+===== SHEET: Regional Events =====
+REGIONAL EVENTS  —  Affect a hex cluster; may impact multiple subdivisions |  |  |  | 
+Roll | Event | Tone | Effect | Notes
+1 | Localized Dust Devil | Hazard | All buildings in the affected hex and adjacent hexes without Hazard Shield are disabled for 1 turn. | Host selects a 1-hex radius center, typically near contested or high-traffic territory.
+2 | Mineral Vein Discovery | Opportunity | A newly revealed hex in the region contains a Rare Mineral deposit. First subdivision to Survey it gains a permanent Terrain Exploit bonus there for free. | Creates a small land-rush moment between nearby subdivisions.
+3 | Seismic Activity | Hazard | All buildings in the region without Redundant Systems suffer -1 output this turn. | Geological event, regional in nature.
+4 | Abandoned Equipment Cache | Opportunity | A subdivision with a unit physically present in the region this turn may claim 5 Minerals + 5 Credits worth of salvage, once. | Rewards active field presence over passive infrastructure.
+5 | Territorial Tension | Neutral | Two or more subdivisions with claims in the region receive a host prompt — an opportunity to negotiate or escalate a Political Action this turn. | Narrative hook, not an automatic mechanical effect — sets the stage for player-driven conflict or diplomacy.
+6 | Ice Deposit Shift | Neutral | Subsurface ice deposits in the region shift — any Water Reclamation Terrain Exploit bonuses in the region are suspended for 1 turn, but a new hex in the region gains the Ice Deposit terrain tag permanently. | Net neutral colony-wide; redistributes advantage rather than removing it.
+
+
+===== SHEET: Subdivision Events =====
+SUBDIVISION EVENTS  —  Target a single player |  |  |  | 
+Roll | Event | Tone | Effect | Notes
+1 | Equipment Malfunction | Hazard | One random building without Redundant Systems is disabled for 1 turn. | Targets risk-weighted buildings first per the risk trigger table.
+2 | Personnel Dispute | Hazard | One random garrisoned unit becomes unavailable next turn (handles an internal matter); no permanent loss. | Minor inconvenience, not punishing — represents the human element of running a subdivision.
+3 | Surplus Shipment | Opportunity | Receive 5 of one resource type (host's choice, themed to subdivision's specialization) at no cost. | A small but genuine boost — Earth noticed something went right.
+4 | Innovator Insight | Opportunity | If subdivision has at least 1 Innovator, gain +3 Research immediately as a flash of unprompted discovery. | Rewards Research investment even outside of dedicated Field Research actions.
+5 | Routine Inspection | Neutral | Host narrates a brief flavor scene of a routine corporate inspection. No mechanical effect. | Pure narrative texture — good opportunity for roleplay if the player wants to engage.
+6 | Personnel Request | Neutral | One garrisoned unit requests reassignment to a different building of the player's choice — purely a flavor prompt, player may ignore. | Optional roleplay hook; player can decline without consequence.
+7 | Minor Sabotage Attempt (NPC) | Hazard | An unnamed rival or opportunist attempts low-grade sabotage; resolved as a weak Analyst action (host rolls vs. subdivision's defense investment). | Represents general Martian lawlessness, not necessarily a specific player.
+8 | Earth's Favor | Opportunity | Subdivision's recent activity catches Earth's attention favorably — +1 Earth Relations immediately, no action required. | Small passive reward, independent of the standard Earth Relations triggers.
+
+
+===== SHEET: Earth Relations =====
+RED PLANET CORPORATE — EARTH RELATIONS |  |  |  |  | 
+A per-subdivision track (not shared) representing your parent company's confidence in your operation. Rises with value returned to Earth, falls when you draw heavily on support without reciprocating. |  |  |  |  | 
+  TRACK BASICS |  |  |  |  | 
+Property | Value |  | Notes |  | 
+Starting Value | 10 |  | Modest trust — not yet earned. Every subdivision starts identical regardless of parent company. |  | 
+Range | 0 – 30 |  | Uncapped growth incentive for high performers; floor prevents negative spirals. |  | 
+Visibility | Private |  | Each subdivision sees only its own track. Not a public colony standing. |  | 
+Tracked By | Host |  | Updated each turn based on declared actions and passive triggers. |  | 
+  WHAT INCREASES IT — Returning Value to Earth |  |  |  |  | 
+Source | Trigger | Gain | Effect / Notes |  | 
+Resource Export | Cumulative resources sold via Transit Hub or Landing Zone | +1 per 20 sold (cumulative) | Passive byproduct of normal economic activity. Tracked cumulatively across all turns; resets only if you wish to define a season/era reset later. |  | 
+Research Sharing | Submit a completed research finding to Earth (Political Action) | +2 flat per submission | Flat regardless of research point cost — rewards frequency of sharing over hoarding discoveries. |  | 
+Colony Milestone | First subdivision to achieve a defined first (building type, personnel count, tier upgrade, etc.) | +3 one-time | Host declares milestones as they're reached. Only the first subdivision to hit each milestone receives the bonus. |  | 
+Consistent Output | Positive net resource production maintained for 3+ consecutive turns | +1 per turn (ongoing while maintained) | Demonstrated reliability. Resets if production goes negative for a turn. |  | 
+  WHAT DECREASES IT — Drawing on Support |  |  |  |  | 
+Source | Trigger | Loss | Effect / Notes |  | 
+Appeal to Earth | Political Action used | -3 | Drains own track only — no longer a shared pool. |  | 
+Emergency Resupply | Corporate Action used | -1 | Modest cost; reflects routine emergency budget draw. |  | 
+Large Requisition | Colonist Requisition above 3 colonists in a single action | -1 per 3 colonists above threshold | First 3 colonists in an action are free of this penalty. |  | 
+Mismanagement Event | Building dormant 3+ consecutive turns, or colonists arrive with no available housing | -2 per event | Signals poor planning to the home office. Host tracks and applies. |  | 
+  THRESHOLD EFFECTS |  |  |  |  | 
+Threshold | Effect |  |  |  | 
+Below 5 | Colonist arrival time increases to 4 turns (from 3). Emergency Resupply Corporate Action unavailable. |  |  |  | 
+At 0 | Appeal to Earth unavailable. Colonist Requisition costs +50% Credits — Earth charges a premium for low-trust subdivisions. |  |  |  | 
+Above 20 | Colonist Requisition costs -25% Credits. Expedited Delivery Corporate Action becomes free instead of costing Credits. |  |  |  | 
+Above 25 | Unlocks subdivision's unique Parent Company Bonus Action (see below). |  |  |  | 
+At 30 | Unlocks the Universal Sustained Excellence Bonus (see below). Track cannot exceed 30. |  |  |  | 
+  PARENT COMPANY BONUS  —  Unlocked at Earth Relations 25+ |  |  |  |  | 
+Parent Company | Bonus Action | Effect | Cost |  | 
+Terra Agricultural Syndicate | Bumper Harvest Directive | All Bio Facilities subdivision-wide produce double output for 2 turns |  |  | 5 Cr
+Unified Mining Consortium | Strategic Reserve Release | Receive 20 Minerals immediately from Earth stockpile |  |  | Free
+Stellar Dynamics Corporation | Priority Freight Contract | All Transit Hub sells this turn ignore sell cap and gain +0.5:1 rate bonus |  |  | Free
+Helix Pharmaceutical Group | Accelerated Trial Authorization | Research Complex Apply Research action costs are halved for 3 turns |  |  | Free
+Omega Security Solutions | Full Spectrum Lockdown | All own buildings immune to Sabotage and Intercept for 2 turns |  |  | Free
+Genesis Tech Industries | Patent Fast-Track | Next research submission auto-grants +4 Earth Relations instead of +2 |  |  | Free
+  UNIVERSAL BONUS  —  Sustained Excellence (Earth Relations = 30) |  |  |  |  | 
+Name | Model Subdivision Status |  |  |  | 
+Requirement | Earth Relations at maximum value (30) |  |  |  | 
+Effect | Earth grants a standing Corporate Action slot — an additional Corporate Action may be taken each turn (2 total instead of 1) for as long as Earth Relations remains at 30 |  |  |  | 
+Loss Condition | If Earth Relations drops below 30 for any reason, the bonus is suspended until the subdivision returns to 30 |  |  |  | 
+Notes | Available to all parent companies equally. Represents Earth's full confidence — a subdivision performing this well earns operational latitude regardless of corporate affiliation. |  |  |  | 
+
+
+===== SHEET: Dynamic Market System =====
+RED PLANET CORPORATE — DYNAMIC RESOURCE MARKET |  |  |  |  | 
+Replaces the flat Transit Hub/Landing Zone sell rates. One colony-wide market per resource, prices driven by aggregate player supply and demand each turn. Player-to-player trade always beats trading with Earth when both sides are present. |  |  |  |  | 
+  BASELINE RESOURCE PRICES |  |  |  |  | 
+Resource | Baseline Price (Cr/unit) | Reasoning |  |  | 
+Energy | 0.5 Cr | High base production rate (+2/turn standard), cheapest to produce in volume — lowest baseline. |  |  | 
+Minerals | 0.5 Cr | Also high-volume baseline production; primary construction material so demand is naturally constant. |  |  | 
+Water | 0.75 Cr | Moderate production rate, dual-purpose (personnel + Bio Facility), slightly scarcer than Energy/Minerals. |  |  | 
+Food/Bio | 0.75 Cr | Same tier as Water — essential, moderate production, steady demand from personnel upkeep. |  |  | 
+Research | 1.5 Cr | Lowest production volume of any resource, gated behind Innovator-heavy investment — highest baseline value. |  |  | 
+  PRICE MOVEMENT FORMULA |  |  |  |  | 
+Element | Formula / Rule |  |  |  | 
+Net Flow | Net Flow = Total units BOUGHT colony-wide this turn − Total units SOLD colony-wide this turn (per resource) |  |  |  | 
+Price Shift | New Live Price = Current Live Price × (1 + (Net Flow ÷ 100) × 0.03), capped at ±15% movement in a single turn |  |  |  | 
+Reversion | After the shift above is applied, the price moves 25% of the remaining distance back toward Baseline Price — this happens every turn regardless of trading activity |  |  |  | 
+Price Floor/Ceiling | Live Price can never fall below 40% of Baseline or rise above 250% of Baseline, regardless of flow — prevents total market collapse or runaway hyperinflation on any single resource |  |  |  | 
+Volatility tuning | The 0.03 coefficient and 25% reversion rate are tuned for MODERATE volatility — meaningful swings on heavy trading turns, but no single turn's activity can permanently break a resource's price. |  |  |  | 
+  WORKED EXAMPLE — Minerals over 3 turns |  |  |  |  | 
+Turn | Bought | Sold | Net Flow | Price Shift | Live Price (after reversion)
+Start | — | — | — | — | 0.50 Cr (baseline)
+Turn 1 | 20 | 60 | -40 | 0.50 × (1 - 0.012) = 0.494 | 0.494 + 25% toward 0.50 = 0.4955 Cr
+Turn 2 | 15 | 80 | -65 | 0.4955 × (1 - 0.0195) = 0.4859 | 0.4859 + 25% toward 0.50 = 0.4894 Cr
+Turn 3 | 70 | 10 | +60 | 0.4894 × (1 + 0.018) = 0.4982 | 0.4982 + 25% toward 0.50 = 0.4987 Cr
+  EARTH TRADE vs. PEER-TO-PEER TRADE |  |  |  |  | 
+Scenario | Resolution |  |  |  | Trade Type
+Selling — no buyer present | Routes to Earth via Landing Zone. Seller receives Live Price × 0.80 (20% export discount) per unit. |  |  |  | EARTH SALE
+Selling — a buyer IS present | Matches directly with the buying player(s) at full Live Price, no discount. If multiple buyers compete for limited supply, host allocates proportionally or by player preference order stated in submissions. |  |  |  | PEER TRADE
+Buying — no resupply mission active and no seller present | Cannot buy that resource this turn — there is no supply source. |  |  |  | UNAVAILABLE
+Buying — resupply mission active, no seller present | Buyer pays Live Price × 1.20 (20% import markup) per unit, up to the resupply mission's available quantity. |  |  |  | EARTH PURCHASE
+Buying — a seller IS present (regardless of resupply status) | Buyer pays full Live Price to the selling player — always cheaper than the resupply markup, so peer trade is preferred whenever available. |  |  |  | PEER TRADE
+Buying — both resupply AND a seller present | Buyer should default to the peer seller (better price) unless the player specifically prefers Earth sourcing for narrative/strategic reasons (e.g. avoiding visible dependency on a specific rival). |  |  |  | PLAYER CHOICE
+  EARTH RESUPPLY MISSIONS |  |  |  |  | 
+Element | Detail |  |  |  | 
+Cadence | Host discretion / narrative-driven. No fixed schedule — resupply missions arrive when the host determines it fits the story (a scheduled cargo run, an emergency drop, a corporate logistics announcement). |  |  |  | 
+Quantity | Host sets per mission based on narrative context — a routine resupply might bring a modest amount of one or two resources; a major one could refill several. |  |  |  | 
+Announcement | Resupply missions are announced publicly (Landing Zone activity is observable to all) at least the turn before or the turn they arrive, giving players a window to plan purchases. |  |  |  | 
+Interaction with Market Sale/Trade Network | Resupply purchases happen through the same Trade Action (Administrator unit action) used for all other market activity — no separate action type needed. |  |  |  | 
+
+
+===== SHEET: Subdivision Equity Market =====
+SUBDIVISION EQUITY MARKET |  |  |  |  | 
+Each subdivision has tradeable shares. Price is anchored to Composite Score. Owning shares pays a dividend tied to the issuing subdivision's Economic category score. |  |  |  |  | 
+  SHARE BASICS |  |  |  |  | 
+Element | Detail |  |  |  | 
+Shares per subdivision | 100 shares issued at game start, fixed — does not change over time. |  |  |  | 
+Starting price | 10 Cr/share for every subdivision at game start, regardless of parent company — all start equal. |  |  |  | 
+Who can buy | Any player may buy shares in any subdivision, including their own (though buying your own shares has limited strategic value beyond price support). |  |  |  | 
+How shares are bought/sold | Through the Trade Action (Administrator unit action) as a sub-action, alongside resource market activity. |  |  |  | 
+  SHARE PRICE FORMULA |  |  |  |  | 
+Element | Detail |  |  |  | 
+Anchor | Share Price = (Composite Score ÷ 10) + 5, recalculated each turn after scoring is updated (Phase 8 of turn processing). |  |  |  | 
+Trading pressure | Net buy/sell pressure on a subdivision's shares this turn shifts the price an additional ±5% per 10 net shares traded, same volatility logic as the resource market, capped at ±15%/turn. |  |  |  | 
+Floor | Share price can never fall below 1 Cr/share, regardless of performance or trading pressure — total wipeout isn't possible, only severe devaluation. |  |  |  | 
+Worked example | A subdivision with Composite Score 56.5 has an anchor price of 10.65 Cr/share before trading pressure is applied that turn. |  |  |  | 
+  DIVIDENDS |  |  |  |  | 
+Element | Detail |  |  |  | 
+Formula | Each turn, the issuing subdivision pays Total Dividend = Economic Category Score ÷ 20 (in Credits), split proportionally among all shareholders based on shares owned. |  |  |  | 
+Who pays | The dividend is paid BY the issuing subdivision FROM their own Credits — it is a real cost to the subdivision being invested in, not free money created by the system. |  |  |  | 
+Strategic implication | A subdivision with a strong Economic score is an attractive investment (pays well) but also bleeds Credits to shareholders every turn — a subdivision with many of its own shares bought back by rivals is effectively subsidizing their opponents. |  |  |  | 
+Worked example | A subdivision with Economic Score 22 pays 1.1 Cr total dividend this turn, split among shareholders — if a rival owns 30 of their 100 shares, that rival receives 0.33 Cr this turn. |  |  |  | 
+  STRATEGIC USES — "Economic Warfare" |  |  |  |  | 
+Tactic | Effect |  |  |  | 
+Buying a rival's shares | Signals confidence (or simply extracts dividend value from a strong economic performer) — a quiet way to benefit from a rival's success without cooperating with them directly. |  |  |  | 
+Mass-selling a rival's shares | Crashes their share price via trading pressure, which has no direct mechanical effect on the issuing subdivision's own resources/score, but is a visible public signal of distress or attack — purely reputational/social pressure, no hard mechanical teeth. |  |  |  | 
+Buying back your own shares | Removes them from rival hands (reducing dividend bleed to opponents) and provides modest price support — a defensive economic move for a subdivision being targeted. |  |  |  | 
+No hostile takeover mechanic | Owning a majority of a rival's shares does NOT grant any control, intel, or special access to that subdivision — equity is purely financial, never operational. This keeps the equity market from becoming a backdoor way to attack a subdivision's actual infrastructure. |  |  |  | 
+
+
+===== SHEET: Scoring System =====
+RED PLANET CORPORATE — SCORING & STANDINGS |  |  |  |  | 
+Rolling standings, updated every turn, with no formal game end. Six category scores plus a weighted composite overall score. Earth Relations is tracked separately and does not factor into scoring. |  |  |  |  | 
+  SIX SCORING CATEGORIES |  |  |  |  | 
+Category | Linked Unit | Formula (per turn snapshot) | Weight |  | 
+Economic | Administrator | Current Credits stockpile + (cumulative Credits earned via Market Sale and Amplify Credit Yield this season ÷ 10) |  |  | 1.0x
+Industrial | Engineer | Sum of current Energy + Minerals + Water + Food/Bio stockpiles ÷ 4, plus +1 per active Resource Generator building |  |  | 1.0x
+Research | Innovator | Cumulative Research generated this season + (2 × number of completed research submissions) |  |  | 1.0x
+Territorial | Engineer / Contractor | Number of claimed hexes × 2, + 3 per Headquarters held, + 1 per Outpost held |  |  | 1.0x
+Security | Contractor | Successful Sabotage defenses this season × 2, + successful Intercepts × 2, + Fortification/Security Detail modules installed |  |  | 0.75x
+Intelligence | Analyst | Successful Sabotage/Surveillance actions this season × 2, + undetected Plant Intel actions × 3 |  |  | 0.75x
+  COMPOSITE OVERALL SCORE |  |  |  |  | 
+Formula | Sum of all six weighted category scores = Composite Score |  |  |  | 
+Security & Intelligence Weight | 0.75x — these categories have a defensive/reactive component that depends partly on rival behavior, not pure subdivision output, so they're weighted slightly below the four primarily self-driven categories |  |  |  | 
+Normalization | Host may normalize scores across the colony periodically (e.g. every 10 turns) so that early-game small numbers don't permanently disadvantage late-blooming subdivisions |  |  |  | 
+Display | Public colony dashboard shows: Composite Rank (1st–Nth), plus each subdivision's best category ("Leading in: Research") |  |  |  | 
+  CATEGORY LEADERBOARD  —  Bragging rights independent of composite rank |  |  |  |  | 
+Per-Category Leader | The subdivision with the highest raw score in each of the six categories is recognized as that category's current leader, regardless of overall composite rank |  |  |  | 
+Title | Category leaders receive an in-fiction title for flavor — e.g. "Economic Leader," "Research Leader" — purely cosmetic, no mechanical bonus |  |  |  | 
+Multiple Leaders | A subdivision can lead multiple categories simultaneously. A subdivision leading 3+ categories simultaneously may be informally recognized as the season's dominant player even if composite rank doesn't reflect it cleanly |  |  |  | 
+Volatility | Category leadership can change turn to turn — this is intentional. It keeps every category relevant and contestable throughout the game rather than settling into a permanent hierarchy |  |  |  | 
+  SEASONAL CHECKPOINTS  (optional — informal, no hard reset) |  |  |  |  | 
+What it is | Every 10-15 turns, the host can post a "checkpoint" summary recognizing the current composite leader and each category leader at that moment in time |  |  |  | 
+Mechanical effect | None — purely a narrative/social checkpoint. Standings continue rolling afterward with no reset |  |  |  | 
+Why include it | Gives the ongoing game natural narrative beats and recognition moments without forcing a hard end or disrupting the rolling standings model |  |  |  | 
+
+
+===== SHEET: Public Dashboard Template =====
+COLONY STANDINGS — TURN [N] |  |  |  |  |  |  | 
+Template for the host's public-facing standings post. Replace example data with live values each turn. |  |  |  |  |  |  | 
+Subdivision | Economic | Industrial | Research | Territorial | Security | Intel | Composite
+[Player A] | 14 | 22 | 8 | 12 | 6 | 4 | 63.5
+[Player B] | 28 | 10 | 16 | 8 | 10 | 12 | 78.5
+[Player C] | 9 | 15 | 6 | 20 | 4 | 2 | 54.5
+Category Leaders this turn: Economic — [Player B] | Industrial — [Player A] | Research — [Player B] | Territorial — [Player C] | Security — [Player B] | Intelligence — [Player B] |  |  |  |  |  |  | 
+
+
+===== SHEET: Turn Structure =====
+RED PLANET CORPORATE — TURN STRUCTURE & PROCESSING ORDER |  |  |  |  | 
+Submission window length is flexible, set by host discretion based on player engagement and pacing. The processing order below is fixed regardless of window length. |  |  |  |  | 
+  PROCESSING ORDER — 8 PHASES |  |  |  |  | 
+Phase | Name | What Happens | Timing Note |  | 
+1 | Submission Window | All players submit their turn privately to the host using the Turn Submission Template — Garrison, Building Actions, Unit Actions, Political Action, Corporate Action, Notes. |  | Window length is host discretion. Late submissions default to 'repeat last turn's garrison, no new actions' unless host rules otherwise. | 
+2 | Simultaneous Resolution Check | Host reviews all submissions together for anything requiring cross-reference before processing: matching trade terms, contested hex claims, multiple units acting in the same hex, Intercept targets. |  | This is a read-through pass, not yet applying effects. Identifies what needs discretionary judgment in later phases. | 
+3 | Passive Systems | Resource generation (for buildings meeting minimum garrison), building upkeep, personnel upkeep, Administrator passive income, territory income, Research accumulation, colonist arrivals scheduled for this turn. |  | Fully automatic — no discretion required. Pure arithmetic from current state. | 
+4 | Building Actions | All declared Building Actions resolve — Harvest, Boost Output, Market Sale, Colonist Requisition, Passive Intel Scan, etc. Requires the building's garrison to meet personnel requirements as declared in Phase 1. |  | A building completed THIS turn cannot take building actions this turn — see Construction Timing below. | 
+5 | Unit Actions | All declared Unit Actions resolve simultaneously — Construct, Survey, Sabotage, Patrol, Trade Action, Field Research, etc. Movement (adjacency, Transit Hub network, vehicle range) is resolved as part of each action. |  | Simultaneous by default. Direct conflicts (two units acting on the same target, an Intercept vs. its target action) are resolved at host discretion based on investment differential, per the Conflict Resolution framework. | 
+6 | Political & Corporate Actions | Each subdivision's single Political Action and single Corporate Action (if declared) resolve. Votes are tallied if an active Motion exists. Company-specific bonuses applied. |  | Processed after Unit Actions so that any newly-changed state (new buildings, captured units) is reflected before political/corporate effects apply. | 
+7 | Event Roll | Host rolls for a random event (15% base chance). If triggered, rolls scope (Colony-wide/Regional/Subdivision) and tone (Hazard/Opportunity/Neutral), applies the result. |  | Always after actions — events react to what players did this turn (risk-weighted targeting), not the reverse. | 
+8 | Reporting | Host updates tracked values (Earth Relations per subdivision, scoring categories, Research pools), posts the public standings dashboard, posts any public statements/broadcasts, and sends each player their private turn report. |  | Public vs. private split per the Information Visibility rules below. | 
+  CONSTRUCTION TIMING — Buildings, Modules, Vehicles |  |  |  |  | 
+Rule | Detail |  |  |  | 
+General rule | Anything built (building, module, tier upgrade, vehicle) takes a minimum of 1 turn to construct. It is not active, cannot be garrisoned, and cannot take or enable any action until the turn AFTER the turn the build action was declared. |  |  |  | 
+1-turn builds | Standard buildings, modules, and vehicles complete in 1 turn: declared in Turn N, active starting Turn N+1. |  |  |  | 
+Multi-turn builds | If a future building/module/vehicle is defined with a longer build time (e.g. 2 turns), it follows the same logic generalized: declared in Turn N, active starting Turn N+(build time). No exceptions. |  |  |  | 
+Garrison before completion | A player may declare garrison assignments to a building that will complete next turn as part of THIS turn's submission, but those units remain in their previous state (available or garrisoned elsewhere) until the building actually exists. The garrison declaration simply takes effect automatically the turn the building completes, so the player doesn't need to remember to re-declare it. |  |  |  | 
+Vehicles | Same rule applies. A vehicle ordered via Produce Vehicle (building action) is not available for crewing or action until the turn after production completes. |  |  |  | 
+  SIMULTANEOUS ACTIONS & DISCRETIONARY CONFLICTS |  |  |  |  | 
+Element | Detail |  |  |  | 
+Default assumption | All unit actions across all players are treated as happening simultaneously within a turn. There is no submission-order advantage — submitting early does not grant priority. |  |  |  | 
+When this breaks down | Some actions are inherently about one player acting on another (Sabotage, Intercept, Enforce Territory, spotting checks). These require host judgment rather than pure simultaneous resolution. |  |  |  | 
+Host's approach | Per the Conflict Resolution framework — compare relevant investment (unit count, modules, Fortification/Security Detail stacks) on each side. Large differentials resolve deterministically in favor of the stronger side. Close differentials get a minor random element. |  |  |  | 
+Two units, same target, same effect | If two unrelated players both target the same building with conflicting actions in the same turn (e.g. both Sabotage the same Extraction Site), the host resolves each independently against the defender's investment — both could succeed, both could fail, or one of each, depending on the defender's total capacity to respond to multiple threats. |  |  |  | 
+Host discretion is final | Genuinely ambiguous edge cases are resolved by host judgment in the spirit of internal consistency and fairness, not a rigid priority algorithm. This keeps the system flexible enough to handle situations the rules didn't anticipate. |  |  |  | 
+
+
+===== SHEET: Information Visibility =====
+INFORMATION VISIBILITY — Public vs. Private by Default |  |  |  | 
+General principle: information that would logically be common knowledge on a shared colony is public. Information that would logically be private corporate/operational data is hidden by default. |  |  |  | 
+Information Type | Default | Reasoning | Can Change Via | Notes
+Composite score & category rankings | PUBLIC | The standings dashboard is the whole point of public competition — everyone can see relative performance. | — | Posted every turn in the Reporting phase.
+Category leaders | PUBLIC | Bragging rights only have value if visible. | — | Cosmetic titles, no mechanical effect.
+Building locations & types (visible on map) | PUBLIC | A building is a physical structure on a shared map — its existence and general type are observable to anyone with map access, like satellite imagery. | — | What's hidden is the building's INTERIOR state — garrison, exact production, modules — not its existence.
+Claimed hex ownership | PUBLIC | Territorial claims are inherently a public-facing assertion on the shared colony map. | — | Closed border STATUS may be public, but doesn't reveal what's happening behind it.
+Exact resource stockpiles | PRIVATE | Corporate financials are confidential by nature — this is the core resource you're managing strategically. | Corporate Audit (forces reveal), Sensor Array Market Surveillance, Trade negotiations | Revealed only through specific intel actions or by choice (negotiating a trade requires some disclosure).
+Garrison assignments | PRIVATE | Personnel deployment is operational security — revealing exactly how many Engineers staff which building gives rivals targeting information. | Successful Patrol, Enhanced Surveillance, Field Surveillance unit actions | Partial reveal only — these actions return limited detail per their definitions, not full garrison lists.
+Earth Relations score | PRIVATE | Per-subdivision and tied to internal performance — not a colony standing, a corporate relationship metric. | Never automatically revealed | Entirely the subdivision's own business unless they choose to disclose it socially.
+Module installations | PRIVATE (mostly) | Detailed loadout is operational info, though a building's overall tier/silhouette might be visually inferable. | Enhanced Surveillance, Corporate Audit | Host's call on how much a casual observer could plausibly infer vs. what requires dedicated intel-gathering.
+Research in progress / completed | PRIVATE until shared | Research is explicitly framed as proprietary IP — the whole incentive of Research Sharing for Earth Relations only works if it's normally private. | Research Sharing Political Action (voluntary disclosure to Earth, not necessarily to rivals), Diplomatic Suite Research Complex agreement | Submitting to Earth for Relations doesn't automatically make it public to rivals unless the player also broadcasts it.
+Public Statements / Broadcasts | PUBLIC | By definition — that's the entire purpose of the action. | — | Content is whatever the player submits; host posts as-is (in-character).
+Denouncements | PUBLIC | An accusation only has social weight if the colony can see it. | — | Both the accusation and (if applicable) the target's response/silence are visible.
+Formal Agreements (Form Agreement) | PUBLIC | Per the diplomatic framework — these are announcements with social but not mechanical weight, so visibility is what gives them any teeth at all. | — | No enforcement mechanism; visibility is the only consequence structure for breaking one.
+Captured units (from spotting) | PRIVATE between the two parties involved | Not a colony-wide announcement — it's a direct incident between the capturer and the captured subdivision. | Either player can choose to disclose it publicly | Host notifies only the two subdivisions involved per the Movement & Borders rules.
+Vehicle designs (modules installed) | PRIVATE | Same logic as building modules — loadout is operational info even if the vehicle's existence/hull class might be observable. | Surveillance-type unit actions, direct combat encounter | A vehicle's presence in a hex may be visible; its loadout generally is not without investigation.
+Active colony Motions (Propose Motion) | PUBLIC | A vote requires the colony to know what's being voted on. | — | Individual vote choices (per Vote on Motion) may remain private unless a player chooses to disclose their vote.
+
+
+===== SHEET: Private Turn Report Template =====
+PRIVATE TURN REPORT TEMPLATE  —  Sent to each player after Phase 8 | 
+  RESOURCE SUMMARY | 
+Format | Current totals for all 6 resources, plus net change this turn (income - upkeep - spending)
+Example | Credits: 142 (+18 this turn) | Minerals: 67 (-22) | Energy: 34 (+3) | Water: 51 (-4) | Food: 48 (-9) | Research: 19 (+4)
+  BUILDING STATUS | 
+Format | List of all owned buildings with current garrison, any actions taken, and any status changes (newly completed, damaged, dormant)
+Example | Extraction Site (Hex B3) — Garrison: 3x Engineer — Harvested Minerals (+2), Boosted Output (+2) — Status: Operational
+Example | Power Facility (Hex C1) — COMPLETED THIS TURN — Available for garrison/actions starting next turn
+  UNIT STATUS | 
+Format | List of all personnel: garrisoned location or available status, plus any units lost/captured/gained
+Example | 5x Engineer: 3x garrisoned (Extraction Site), 2x available | 1x Contractor: CAPTURED while crossing [Rival]'s territory at Hex D4 — contact [Rival] to negotiate resolution
+  ACTION RESULTS | 
+Format | Outcome of each declared action — success/failure, and any intel gathered (kept private unless player chooses to share)
+Example | Sabotage vs. [Rival]'s Comms Array: FAILED — your Analyst was detected. [Rival] has been notified an attempt occurred (but not by whom unless they investigate).
+Example | Field Surveillance at Hex E2: SUCCESS — Target hex contains a Research Complex (Tier 1) with visible Fortification module.
+  EVENT NOTIFICATION | 
+Format | If an event affected this subdivision (Subdivision-scope, or a Regional/Colony-wide event that touched their territory), describe it here
+Example | SUBDIVISION EVENT — Surplus Shipment: You received 5 Minerals at no cost, courtesy of Earth supply chain efficiency this cycle.
+  EARTH RELATIONS UPDATE | 
+Format | Current Earth Relations value, plus what changed it this turn and why
+Example | Earth Relations: 14 (+1) — Resource Export threshold reached (+1), Consistent Output bonus (ongoing)
+  SCORING SNAPSHOT | 
+Format | This subdivision's six category scores and composite, plus their public rank (cross-reference with public dashboard)
+Example | Economic: 22 | Industrial: 15 | Research: 8 | Territorial: 12 | Security: 6 | Intelligence: 4 — Composite: 56.5 (Rank: 3rd of 6)
