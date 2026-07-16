@@ -704,7 +704,21 @@ plus admin slot-assignment is the cleanest reconciliation of "fresh 6-player see
 with per-player registration choices, and keeps [D-014]'s non-exclusive,
 admin-assigned model intact.
 
+### D-049 — Client label humanization also splits camelCase keys
+*Source: QA of the private report's "Cumulative Counters" panel, which renders
+engine counter keys (`researchGenerated`, `successfulIntercepts`, …) via the shared
+`titleCase` helper.*
+**Ruling:** `titleCase` (in `src/lib/client/labels.ts`) inserts a space at each
+lower→upper boundary before splitting on `_`/whitespace, so camelCase engine keys
+display as readable words ("Research Generated") rather than run-together text
+("Researchgenerated"). This is display-only; the raw keys are never sent back to
+the API, and ALL_CAPS enum values (building/action/hull types) are unaffected since
+they contain no lower→upper transitions.
+**Reasoning:** The engine emits counter keys in camelCase with no display labels of
+their own; humanizing them client-side keeps the report legible without inventing
+any game data or per-key label tables.
+
 ---
 
-*End of DECISIONS.md (D-001 – D-048). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-049). Append new decisions as later phases surface
 gaps; never renumber existing entries.*

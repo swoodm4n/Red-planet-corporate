@@ -49,6 +49,7 @@ export function unitDotClass(type: string): string {
 
 export function titleCase(s: string): string {
   return s
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2") // split camelCase keys (e.g. researchGenerated)
     .toLowerCase()
     .split(/[_\s]+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
