@@ -473,5 +473,77 @@ bonus). Garrisoned/crewing units cannot take unit actions.
 
 ---
 
-*End of DECISIONS.md (D-001 – D-037). Append new decisions as later phases surface
+## G. Engine Implementation (game-engine agent)
+
+### D-038 — PENDING→ACTIVE activation and retirement run before Phase 2 validation
+*Source: GAME_SPEC §16 places activation "at the top of Phase 3", but Phase 2
+validation and the Garrison Phase must see newly-active buildings for [D-022] to
+hold ("a thing built in turn N is fully live for all of N+1 including N+1's
+production", and its declared garrison auto-applies).*
+**Ruling:** At the very start of turn processing — before Phase 2 validation and
+before garrison application — the engine (1) processes queued admin retirements
+[D-032] and (2) promotes every PENDING building/module/vehicle created last turn
+to ACTIVE. Validation and garrison therefore operate on the activated state.
+Newly-constructed things (created *this* turn in Phase 4/5) remain PENDING and are
+excluded (they cannot act/garrison this turn, per [D-022]).
+**Reasoning:** Activation is deterministic and non-discretionary, so hoisting it
+ahead of read-only validation changes nothing except making the "fully live in
+N+1" guarantee implementable. The §16 "top of Phase 3" wording describes the
+turn-boundary write; performing it a few steps earlier is observationally
+identical.
+
+### D-039 — Production precedes attrition (GAME_SPEC §16 supersedes the D-019 parenthetical)
+*Source: GAME_SPEC §16 Phase 3 step 4 states explicitly "compute production first
+(uses current garrison), then upkeep, then attrition", and the cross-phase note
+confirms "Attrition (P3f) can drop a building below garrison-min → it produced
+this turn if min was met at P3a, but is flagged non-operational for N+1." This
+directly contradicts the parenthetical in D-019 ("cull happens before
+production").*
+**Ruling:** The engine follows GAME_SPEC §16: within Phase 3 the order is
+(a) production, (b) research-link/accumulation, (c) income, (d) dividends,
+(e) upkeep (building→module→personnel), (f) attrition, (g) streak/dormant
+bookkeeping. A unit culled by starvation in step (f) vacates its garrison and may
+render a building non-operational for turn N+1, but this turn's production
+(computed in step (a) when garrison-min was met) still stands. The D-019
+parenthetical "cull happens before production" is treated as superseded; every
+other clause of D-019 (Food/Water/Energy/Research shortfall culls units by
+ascending id) is retained.
+**Reasoning:** GAME_SPEC is the authoritative contract and resolves this exact
+ambiguity in two places; honoring it keeps a single, testable ordering.
+
+### D-040 — Persistent module output bonuses are applied in Phase 3; only declared actions are Phase-4 uplifts
+*Source: GAME_SPEC §7.3 header says "Output computation (per building, per turn,
+Phase 3+4)"; D-010 loosely calls Efficiency "+1 each (Phase 4 uplift)".*
+**Ruling:** A building's passive per-turn output — base table value plus all
+persistent output-boosting modules (Efficiency, Operations Director in OUTPUT
+mode, Personnel Module with its named units garrisoned, Terrain Exploit on
+matching terrain) — is computed and added to stockpiles in **Phase 3** for every
+operational building. Research Link adds +1 R to the subdivision pool in Phase 3.
+Only **declared building actions** (Boost Output +2/surplus set, Research Sprint
++2, Emergency Extraction ×2 with damage roll, Terrain Harvest +3) are Phase-4
+uplifts. Emergency Extraction doubles the building's *total* output for the turn,
+implemented in Phase 4 as an additional payout equal to the Phase-3 passive amount
+(net ×2) plus any Phase-4 boosts, per §7.3.
+**Reasoning:** Modules are passive systems, so they belong with passive production
+(Phase 3); D-010's "Phase 4 uplift" phrasing was describing that Efficiency stacks
+on the base, not mandating a phase. Since Phase 3 precedes Phase 4 spending, the
+placement only matters at storage caps, where applying persistent bonuses first is
+the natural reading.
+
+### D-041 — Test runner is Vitest; package layout is an npm workspace with packages/engine
+*Source: brief leaves the choice to the engine agent.*
+**Ruling:** The engine lives in `packages/engine` (package name `@rpc/engine`),
+exported via `exports["."]` (built `dist`) and `exports["./src"]` (raw TS for
+same-repo importers). The repo root is an npm workspace (`workspaces:
+["packages/*"]`) so the future Next.js backend can be added as a sibling package.
+Tests use **Vitest** (fast, ESM-native, zero-config TS). The engine has zero
+runtime dependencies — the seeded RNG (SplitMix64 + xoshiro256**) and fixed-point
+money are implemented in-house.
+**Reasoning:** Vitest matches the brief's recommendation and needs no Babel/ts-jest
+plumbing; a workspace keeps engine/backend cleanly separated while sharing one
+lockfile.
+
+---
+
+*End of DECISIONS.md (D-001 – D-041). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
