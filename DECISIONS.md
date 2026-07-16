@@ -720,5 +720,34 @@ any game data or per-key label tables.
 
 ---
 
+## Decision categories at a glance
+
+The 49 decisions group into eight categories A–H, numbered sequentially with no
+gaps. Categories A–F were made by the **spec-analyst** while writing
+`GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
+ambiguity; H by the **backend** agent for server-only concerns. All are binding
+on downstream code.
+
+| Cat | Theme | Decisions | Representative rulings |
+|---|---|---|---|
+| **A** | Economy & Market | D-001 – D-009 | Dynamic Market authoritative over flat rates (D-001); fixed-point money (D-002); base storage cap 100 (D-003); peer-vs-Earth sell routing (D-005); market/equity price-update timing (D-006/D-007); Admin/territory passive income (D-008/D-009) |
+| **B** | Buildings, Modules, Personnel | D-010 – D-015 | passive production, no additive Harvest (D-010); concrete numbers for "vague by design" modules (D-011); "operational" predicate (D-012); upkeep/shortfall order (D-013); parent perks non-exclusive (D-014); the 2 choice personnel (D-015) |
+| **C** | Turn Processing, RNG, Conflict | D-016 – D-025 | seeded RNG + consumption order (D-016); conflict formula (D-017); simultaneous-order resolution (D-018); starvation attrition (D-019); credits clamped at 0 / insolvency flag (D-020); atomic order validation (D-021); build activation N+1 (D-022); housing overflow (D-023); Earth Relations mechanics (D-024/D-025) |
+| **D** | Map, Movement, Spotting | D-026 – D-028 | odd-q hex geometry (D-026); free-adjacency + Transit-Hub jump (D-027); spotting → capture (D-028) |
+| **E** | Vehicles, Combat, Retirement | D-029 – D-033 | predefined vehicle modules only (D-029); vehicle combat via conflict formula (D-030); captured units inert (D-031); retirement cleanup (D-032); destruction bookkeeping (D-033) |
+| **F** | Scoring & Misc | D-034 – D-037 | Oxygen/tech-tree/freeform-research inert + admin-stamped (D-034); scoring counters, normalization off by default (D-035); HQ +1 action (D-036); action-economy limits (D-037) |
+| **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
+| **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
+
+Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
+wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
+H-D-046/047) keep every "host discretion" hook as data the engine resolves, never
+free-text logic; **snapshot = truth** (H-D-045) keeps the engine the single source
+of game state. Items the engine deliberately leaves inert or admin-only (tech
+tree, Oxygen thresholds, custom vehicle modules, captured-unit release,
+normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
+
+---
+
 *End of DECISIONS.md (D-001 – D-049). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
