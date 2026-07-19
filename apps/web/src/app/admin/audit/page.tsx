@@ -4,6 +4,16 @@ import { Fragment, useEffect, useState } from "react";
 import { useAdmin } from "@/lib/client/adminContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
+import { humanizeAudit, titleCase } from "@/lib/client/labels";
+
+function fmtTarget(type: string | null, id: string | null): string {
+  if (!type) return "—";
+  const label = titleCase(type);
+  if (!id) return label;
+  // Long CUIDs (user ids) are noise — show a short suffix; numeric ids in full.
+  const shortId = /^\d+$/.test(id) ? id : `…${id.slice(-6)}`;
+  return `${label} ${shortId}`;
+}
 
 interface AuditEntry {
   id: string;
@@ -53,10 +63,14 @@ export default function AuditPage() {
                     <tr onClick={() => setOpen(open === e.id ? null : e.id)} style={{ cursor: "pointer" }}>
                       <td className="td-dim">{new Date(e.createdAt).toLocaleString()}</td>
                       <td className="td-dim">{e.admin?.email ?? "—"}</td>
-                      <td><span className="badge badge-cyan">{e.action}</span></td>
-                      <td className="td-dim">{e.targetType ? `${e.targetType} ${e.targetId ?? ""}` : "—"}</td>
+                      <td>
+                        {(() => { const { label, suffix } = humanizeAudit(e.action); return (
+                          <><span className="badge badge-cyan">{label}</span>{suffix && <span className="td-dim" style={{ marginLeft: 6, fontSize: 11 }}>{suffix}</span>}</>
+                        ); })()}
+                      </td>
+                      <td className="td-dim">{fmtTarget(e.targetType, e.targetId)}</td>
                       <td className="td-dim">{e.note ?? "—"}</td>
-                      <td className="td-dim">{open === e.id ? "▾" : "▸"}</td>
+                      <td className="td-dim">{open === e.id ? "▾ hide" : "▸ diff"}</td>
                     </tr>
                     {open === e.id && (
                       <tr>

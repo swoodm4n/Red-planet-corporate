@@ -4,23 +4,23 @@ import { useState } from "react";
 import { useAdmin } from "@/lib/client/adminContext";
 import { api } from "@/lib/client/api";
 import { StateEditBuilder, type StateEdit } from "@/lib/client/StateEditBuilder";
+import { ConfirmButton } from "@/lib/client/Confirm";
 
 export default function StateEditorPage() {
-  const { gameId } = useAdmin();
+  const { gameId, subdivisions } = useAdmin();
   const [edits, setEdits] = useState<StateEdit[]>([]);
   const [note, setNote] = useState("");
   const [result, setResult] = useState<{ applied: string[]; warnings: string[] } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   async function apply() {
     if (edits.length === 0) return;
-    setBusy(true); setErr(null); setResult(null);
+    setErr(null); setResult(null);
     try {
       const r = await api.post<{ applied: string[]; warnings: string[] }>(`/api/admin/games/${gameId}/state-edit`, { edits, note: note || undefined });
       setResult(r);
-      setEdits([]);
-    } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
+      setEdits([]); setNote("");
+    } catch (e) { setErr((e as Error).message); }
   }
 
   return (
@@ -28,8 +28,13 @@ export default function StateEditorPage() {
       <div className="page-header">
         <div>
           <div className="page-title">STATE EDITOR</div>
-          <div className="page-subtitle">Direct structured edits (audited, before/after). The engine derives all consequences (D-046).</div>
+          <div className="page-subtitle">Direct structured edits to the live game snapshot for game #{gameId} (D-046).</div>
         </div>
+      </div>
+
+      <div className="help-box">
+        <span className="help-title">WHAT THIS IS</span>
+        Every edit here writes directly to the authoritative game state and is recorded in the <strong>audit log</strong> with a full before/after snapshot. You only author <strong>data</strong> (resource numbers, Earth Relations, disable flags, hex ownership, effects) — the engine derives all downstream consequences on the next resolution. Pick an operation, fill its fields, add it to the queue, then apply. Hover any field for a hint.
       </div>
 
       {err && <div className="error-box">{err}</div>}
@@ -44,12 +49,23 @@ export default function StateEditorPage() {
       <div className="panel">
         <div className="panel-head"><span>&#9635; COMPOSE EDITS</span></div>
         <div className="panel-body">
-          <StateEditBuilder edits={edits} onChange={setEdits} />
+          <StateEditBuilder edits={edits} onChange={setEdits} subdivisions={subdivisions} />
           <label className="field" style={{ marginTop: 14 }}>
-            <span className="field-label">Audit note</span>
+            <span className="field-label">Audit note (recommended)</span>
             <input className="console-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Reason for this edit…" />
           </label>
-          <button className="btn btn-primary" disabled={busy || edits.length === 0} onClick={apply}>APPLY {edits.length} EDIT(S)</button>
+          <ConfirmButton
+            className="btn btn-primary"
+            disabled={edits.length === 0}
+            title="Apply state edits?"
+            confirmLabel={`APPLY ${edits.length} EDIT(S)`}
+            confirmClass="btn-primary"
+            danger={false}
+            message={<>This writes <strong>{edits.length} edit(s)</strong> directly to the live game state for game #{gameId}. It is audited but cannot be automatically undone — you would have to author a compensating edit. Continue?</>}
+            onConfirm={apply}
+          >
+            APPLY {edits.length} EDIT(S)
+          </ConfirmButton>
         </div>
       </div>
     </div>
