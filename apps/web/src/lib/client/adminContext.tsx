@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/client/api";
-import type { GameSummary, MeResponse } from "@/lib/client/types";
+import type { GameSummary, MeResponse, SubdivisionSlot } from "@/lib/client/types";
 import { Loading } from "@/lib/client/Shell";
 
 interface AdminCtx {
@@ -12,6 +12,12 @@ interface AdminCtx {
   gameId: number;
   setGameId: (id: number) => void;
   refresh: () => void;
+  /** Slots for the selected game (null while loading). */
+  subdivisions: SubdivisionSlot[] | null;
+  /** Count of PENDING registrations (colony-wide), for nav badges / overview. */
+  pendingRegistrations: number | null;
+  /** Count of PENDING research proposals for the selected game. */
+  pendingResearch: number | null;
 }
 
 const Ctx = createContext<AdminCtx | null>(null);
@@ -29,6 +35,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [gameId, setGameId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [subdivisions, setSubdivisions] = useState<SubdivisionSlot[] | null>(null);
+  const [pendingRegistrations, setPendingRegistrations] = useState<number | null>(null);
+  const [pendingResearch, setPendingResearch] = useState<number | null>(null);
+
+  // Ambient game-state summary for nav badges + the overview page. Non-blocking:
+  // failures leave counts null so pages still render.
+  useEffect(() => {
+    if (gameId == null) return;
+    let alive = true;
+    api.get<{ subdivisions: SubdivisionSlot[] }>(`/api/admin/games/${gameId}/subdivisions`)
+      .then((r) => { if (alive) setSubdivisions(r.subdivisions); }).catch(() => {});
+    api.get<{ registrations: unknown[] }>(`/api/admin/registrations?status=PENDING`)
+      .then((r) => { if (alive) setPendingRegistrations(r.registrations.length); }).catch(() => {});
+    api.get<{ proposals: unknown[] }>(`/api/admin/games/${gameId}/research-proposals?status=PENDING`)
+      .then((r) => { if (alive) setPendingResearch(r.proposals.length); }).catch(() => {});
+    return () => { alive = false; };
+  }, [gameId, tick]);
 
   useEffect(() => {
     (async () => {
@@ -57,7 +80,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   if (!me || !games || gameId == null) return <div className="auth-wrap"><Loading label="LOADING GM CONSOLE" /></div>;
 
   return (
-    <Ctx.Provider value={{ me, games, gameId, setGameId, refresh: () => setTick((t) => t + 1) }}>
+    <Ctx.Provider value={{ me, games, gameId, setGameId, refresh: () => setTick((t) => t + 1), subdivisions, pendingRegistrations, pendingResearch }}>
       {children}
     </Ctx.Provider>
   );
