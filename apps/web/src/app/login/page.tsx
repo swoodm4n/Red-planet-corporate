@@ -18,7 +18,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const r = await api.post<{ role: string; status: string }>("/api/auth/login", { email, password });
-      if (r.role === "ADMIN") router.replace("/admin/registrations");
+      if (r.role === "ADMIN") router.replace("/admin/overview");
       else if (r.status === "PENDING") router.replace("/pending");
       else router.replace("/play/dashboard");
     } catch (e) {
