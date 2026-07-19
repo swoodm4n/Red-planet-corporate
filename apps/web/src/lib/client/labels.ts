@@ -130,3 +130,168 @@ export const CORPORATE_ACTIONS = [
 ];
 
 export const PHYSICAL_RESOURCES = ["ENERGY", "MINERALS", "WATER", "FOOD", "RESEARCH"];
+
+// ---------------------------------------------------------------------------
+// Display-only metadata. The engine (@rpc/engine) is the source of truth and
+// re-validates everything at submit + resolution; the maps below exist ONLY to
+// give the player readable labels and immediate on-screen hints. None of it
+// changes what the server accepts.
+// ---------------------------------------------------------------------------
+
+export const BUILDING_TYPES = [
+  "POWER_FACILITY", "EXTRACTION_SITE", "WATER_RECLAMATION", "BIO_FACILITY",
+  "RESEARCH_COMPLEX", "COMMERCIAL_HUB", "HABITAT_MODULE", "OUTPOST",
+  "HEADQUARTERS", "POWER_CONDUIT", "WAREHOUSE", "COMMUNICATIONS_ARRAY",
+  "TRANSIT_HUB", "VEHICLE_WORKSHOP",
+];
+
+export const MODULE_TYPES = [
+  "EFFICIENCY", "REDUNDANT_SYSTEMS", "EXPANSION", "FORTIFICATION",
+  "SECURITY_DETAIL", "OPERATIONS_DIRECTOR", "TERRAIN_EXPLOIT", "SENSOR_ARRAY",
+  "COMMAND_SUITE", "DIPLOMATIC_SUITE", "AUTOMATION", "PERSONNEL_MODULE",
+  "HAZARD_SHIELD", "RESEARCH_LINK", "TRADE_NETWORK", "GLOBAL_CONTRIBUTION",
+];
+
+export function buildingLabel(type: string): string {
+  return titleCase(type);
+}
+
+/** Minimum garrison per building type — display mirror of engine BUILDINGS[…].garrisonMin (§7.1). */
+export const GARRISON_MIN: Record<string, Partial<Record<string, number>>> = {
+  POWER_FACILITY: { ENGINEER: 2 },
+  EXTRACTION_SITE: { ENGINEER: 3 },
+  WATER_RECLAMATION: { ENGINEER: 2 },
+  BIO_FACILITY: { ENGINEER: 2 },
+  RESEARCH_COMPLEX: { INNOVATOR: 3 },
+  COMMERCIAL_HUB: { ADMINISTRATOR: 2 },
+  HABITAT_MODULE: { ADMINISTRATOR: 1 },
+  OUTPOST: { ENGINEER: 2 },
+  HEADQUARTERS: { ADMINISTRATOR: 2, CONTRACTOR: 1 },
+  POWER_CONDUIT: {},
+  WAREHOUSE: { ENGINEER: 2 },
+  COMMUNICATIONS_ARRAY: { ANALYST: 2, ENGINEER: 1 },
+  TRANSIT_HUB: { ENGINEER: 2, ADMINISTRATOR: 1 },
+  VEHICLE_WORKSHOP: { ENGINEER: 3 },
+};
+
+/** One-line "what does this do" copy per action (§10). Advisory help text only. */
+export interface ActionInfo { label: string; desc: string; personnel?: string; }
+
+export const BUILDING_ACTION_INFO: Record<string, ActionInfo> = {
+  BOOST_OUTPUT: { label: "Boost Output", desc: "Spend a surplus full garrison set to add +2 to this generator's output this turn." },
+  EMERGENCY_EXTRACTION: { label: "Emergency Extraction", desc: "Double this generator's output this turn, with a 25% chance of building damage. Uses your Corporate action slot." },
+  MARKET_SALE: { label: "Market Sale", desc: "Sell up to 10 units of a resource on the colony market at the live price (Transit Hub)." },
+  COLONIST_REQUISITION: { label: "Colonist Requisition", desc: "Order up to 5 colonists (arrive in 3 turns). Costs 5 Cr each + a 2 Cr fee. Headquarters only." },
+  TERRITORIAL_CLAIM: { label: "Territorial Claim", desc: "Register a claim on a hex to earn territory income. Headquarters only." },
+  RESOURCE_TRANSFER: { label: "Resource Transfer", desc: "Move up to 20 units of a resource to one of your own buildings (Warehouse)." },
+  PRODUCE_VEHICLE: { label: "Produce Vehicle", desc: "Build one vehicle of the chosen hull class. Vehicle Workshop only." },
+  AMPLIFY_CREDIT_YIELD: { label: "Amplify Credit Yield", desc: "Give every Administrator +1 bonus credit this turn. Commercial Hub only." },
+  RESEARCH_SPRINT: { label: "Research Sprint", desc: "Spend a surplus Innovator garrison set to add +2 Research. Research Complex only." },
+  PASSIVE_INTEL_SCAN: { label: "Passive Intel Scan", desc: "Report enemy unit presence within intel range. Communications Array only." },
+  LOCKDOWN: { label: "Lockdown", desc: "Put the building into a defensive lockdown (requires a Security Detail module)." },
+};
+
+export const UNIT_ACTION_INFO: Record<string, ActionInfo> = {
+  CONSTRUCT_BUILDING: { label: "Construct Building", desc: "Build a new building on a target hex. Costs the building's build cost.", personnel: "ENGINEER" },
+  INSTALL_MODULE: { label: "Install Module", desc: "Install a module on one of your buildings.", personnel: "ENGINEER" },
+  TIER_UPGRADE: { label: "Tier Upgrade", desc: "Upgrade an Outpost into a Headquarters (18 Min + 24 Cr).", personnel: "ENGINEER" },
+  PLACE_OUTPOST: { label: "Place Outpost", desc: "Place an outpost on a hex to claim territory.", personnel: "ENGINEER" },
+  SURVEY_HEX: { label: "Survey Hex", desc: "Survey a hex to reveal its terrain and resources.", personnel: "ENGINEER" },
+  DEMOLISH: { label: "Demolish", desc: "Demolish one of your buildings, recovering 50% of its mineral cost.", personnel: "ENGINEER" },
+  REPAIR_BUILDING: { label: "Repair Building", desc: "Repair a damaged building (2 Cr + 2 Min).", personnel: "ENGINEER" },
+  SABOTAGE: { label: "Sabotage", desc: "Attempt to sabotage a rival's building.", personnel: "ANALYST" },
+  INTERCEPT: { label: "Intercept", desc: "Move to intercept a rival subdivision's units.", personnel: "CONTRACTOR" },
+  FIELD_RESEARCH: { label: "Field Research", desc: "Generate +1 Research plus an intel insight.", personnel: "INNOVATOR" },
+  TRADE_ACTION: { label: "Trade Action", desc: "Execute a market or equity trade (§11).", personnel: "ADMINISTRATOR" },
+  NEGOTIATE: { label: "Negotiate", desc: "Open negotiations with another subdivision.", personnel: "ADMINISTRATOR" },
+  LOBBY: { label: "Lobby", desc: "Lobby for votes on a motion (3 Cr per vote).", personnel: "ADMINISTRATOR" },
+  PATROL: { label: "Patrol", desc: "Patrol a hex to deter and spot rival units.", personnel: "CONTRACTOR" },
+  ENFORCE_TERRITORY: { label: "Enforce Territory", desc: "Enforce your claim on a contested hex.", personnel: "CONTRACTOR" },
+  COUNTER_INTEL: { label: "Counter-Intel", desc: "Protect your subdivision against enemy intel operations (2 Cr).", personnel: "ANALYST" },
+  VEHICLE_MOVE: { label: "Vehicle Move", desc: "Move a crewed vehicle to a target hex." },
+  VEHICLE_ATTACK: { label: "Vehicle Attack", desc: "Attack a target with a crewed vehicle." },
+};
+
+export const POLITICAL_ACTION_INFO: Record<string, ActionInfo> = {
+  PUBLIC_STATEMENT: { label: "Public Statement", desc: "Broadcast a colony-wide statement (2 Cr)." },
+  PROPOSE_MOTION: { label: "Propose Motion", desc: "Propose a colony motion to be voted on (3 Cr)." },
+  FORM_AGREEMENT: { label: "Form Agreement", desc: "Form a social agreement with another subdivision (free)." },
+  DENOUNCE: { label: "Denounce", desc: "Publicly denounce a rival subdivision (2 Cr)." },
+  APPEAL_TO_EARTH: { label: "Appeal to Earth", desc: "Request a resource shipment: +10 of one resource next turn, costs 5 Cr and −3 Earth Relations." },
+  VOTE_ON_MOTION: { label: "Vote on Motion", desc: "Cast your vote on an active colony motion (free)." },
+};
+
+export const CORPORATE_ACTION_INFO: Record<string, ActionInfo> = {
+  EXPEDITED_DELIVERY: { label: "Expedited Delivery", desc: "Buy a resource shipment for delivery (5 Cr)." },
+  EMERGENCY_RESUPPLY: { label: "Emergency Resupply", desc: "+8 of one resource next turn. Costs 8 Cr and −1 Earth Relations." },
+  CORPORATE_AUDIT: { label: "Corporate Audit", desc: "Run a corporate audit for intel (4 Cr)." },
+  HOSTILE_ACQUISITION: { label: "Hostile Acquisition", desc: "Attempt to poach one of a rival's units (10 Cr, resolved via counter-bid)." },
+  BLACK_MARKET_SALE: { label: "Black Market Sale", desc: "Sell up to 6 units of a resource at live price, bypassing the market cap (2 Cr fee)." },
+  DISINFORMATION_CAMPAIGN: { label: "Disinformation Campaign", desc: "Spread disinformation against rivals (5 Cr)." },
+};
+
+export function actionInfo(action: string): ActionInfo {
+  return (
+    BUILDING_ACTION_INFO[action] ??
+    UNIT_ACTION_INFO[action] ??
+    POLITICAL_ACTION_INFO[action] ??
+    CORPORATE_ACTION_INFO[action] ??
+    { label: titleCase(action), desc: "" }
+  );
+}
+
+export function actionLabel(action: string): string {
+  return actionInfo(action).label;
+}
+
+/** Friendly labels for the free-form parameter fields shown in the add-order forms. */
+export const PARAM_LABELS: Record<string, string> = {
+  resource: "Resource",
+  quantity: "Quantity",
+  colonistCount: "Number of colonists",
+  colonistType: "Colonist type",
+  targetHexCol: "Target hex column",
+  targetHexRow: "Target hex row",
+  toBuildingId: "Destination building",
+  hull: "Hull class",
+  buildingType: "Building to construct",
+  moduleType: "Module",
+  targetBuildingId: "Target building",
+  targetSubdivisionId: "Target subdivision",
+  targetUnitId: "Target unit ID",
+  text: "Message",
+};
+
+export function paramLabel(field: string): string {
+  return PARAM_LABELS[field] ?? titleCase(field);
+}
+
+// ----- Admin StateEdit op metadata (plain-language names + what each op does) -----
+// Mirrors the server op set in src/server/stateEdit.ts. Display-only.
+export const STATE_EDIT_OPS: Record<string, { label: string; desc: string }> = {
+  SET_RESOURCE: { label: "Set resource", desc: "Overwrite one resource stockpile for a subdivision to an exact value." },
+  ADD_RESOURCE: { label: "Add / remove resource", desc: "Add (or subtract, with a negative amount) from a subdivision's stockpile." },
+  SET_EARTH_RELATIONS: { label: "Set Earth Relations", desc: "Set a subdivision's Earth Relations to an exact value (clamped 0-30)." },
+  ADJUST_EARTH_RELATIONS: { label: "Adjust Earth Relations", desc: "Nudge Earth Relations up/down by a delta (clamped 0-30)." },
+  DISABLE_BUILDING: { label: "Disable building", desc: "Flag a building as disabled (produces nothing) until the given turn." },
+  SET_HEX_OWNER: { label: "Set hex owner", desc: "Assign a map hex to a subdivision, or unclaim it (leave owner blank)." },
+  SET_OXYGEN: { label: "Set oxygen counter", desc: "Set the colony-wide oxygen habitability counter (inert display value)." },
+  ADD_MILESTONE: { label: "Mark milestone claimed", desc: "Record a milestone id as already claimed (prevents its first-time bonus)." },
+  REGISTER_EFFECT: { label: "Register active effect", desc: "Attach a timed effect (e.g. an event's mechanical result) resolved by the engine next turn." },
+  RELEASE_CAPTIVE: { label: "Release captive", desc: "Free a captured unit — return it to a subdivision, or remove it entirely." },
+};
+
+export const EFFECT_TYPE_META: Record<string, string> = {
+  OUTPUT_DELTA: "Change building output by a magnitude (e.g. -1 for a Dust Storm).",
+  MODULE_HALF_EFFECT: "Halve the effect of one module type this turn (e.g. Equipment Recall).",
+  NO_INTELLIGENCE: "Suppress all Intelligence actions in scope (e.g. Solar Flare).",
+  TERRAIN_EXPLOIT_SUSPEND: "Suspend Terrain Exploit output in scope (e.g. Ice Deposit Shift).",
+};
+
+// Humanize audit-log action codes (APPROVE_REGISTRATION -> Approve Registration).
+// Some codes carry a suffix after a colon (e.g. MANUAL_EVENT:Dust Storm).
+export function humanizeAudit(action: string): { label: string; suffix?: string } {
+  const [code, ...rest] = action.split(":");
+  const suffix = rest.length ? rest.join(":") : undefined;
+  return { label: titleCase(code), suffix };
+}
