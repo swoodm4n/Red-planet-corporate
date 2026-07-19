@@ -6,6 +6,7 @@ import { Shell, type NavSection } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { ReportResponse } from "@/lib/client/types";
 import { PARENT_LABELS, RESOURCE_SHORT, countdown } from "@/lib/client/labels";
+import { Icon, ResourceIcon } from "@/lib/client/Icon";
 
 const SECTIONS: NavSection[] = [
   {
@@ -49,12 +50,12 @@ function PlayShell({ children }: { children: React.ReactNode }) {
   const res = report?.own.resources;
   const ticker = res ? (
     <>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.CREDITS}</span><span className="res-value">{res.creditsDisplay}</span></div>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.MINERALS}</span><span className="res-value">{res.MINERALS}</span></div>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.ENERGY}</span><span className="res-value">{res.ENERGY}</span></div>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.WATER}</span><span className="res-value">{res.WATER}</span></div>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.FOOD}</span><span className="res-value">{res.FOOD}</span></div>
-      <div className="res-chip"><span className="res-label">{RESOURCE_SHORT.RESEARCH}</span><span className="res-value">{res.RESEARCH}</span></div>
+      <div className="res-chip"><ResourceIcon resource="CREDITS" size={15} /><span className="res-label">{RESOURCE_SHORT.CREDITS}</span><span className="res-value">{res.creditsDisplay}</span></div>
+      <div className="res-chip"><ResourceIcon resource="MINERALS" size={15} /><span className="res-label">{RESOURCE_SHORT.MINERALS}</span><span className="res-value">{res.MINERALS}</span></div>
+      <div className="res-chip"><ResourceIcon resource="ENERGY" size={15} /><span className="res-label">{RESOURCE_SHORT.ENERGY}</span><span className="res-value">{res.ENERGY}</span></div>
+      <div className="res-chip"><ResourceIcon resource="WATER" size={15} /><span className="res-label">{RESOURCE_SHORT.WATER}</span><span className="res-value">{res.WATER}</span></div>
+      <div className="res-chip"><ResourceIcon resource="FOOD" size={15} /><span className="res-label">{RESOURCE_SHORT.FOOD}</span><span className="res-value">{res.FOOD}</span></div>
+      <div className="res-chip"><ResourceIcon resource="RESEARCH" size={15} /><span className="res-label">{RESOURCE_SHORT.RESEARCH}</span><span className="res-value">{res.RESEARCH}</span></div>
     </>
   ) : (
     <span className="res-chip"><span className="res-label">NO SUBDIVISION ASSIGNED — PUBLIC VIEW</span></span>
@@ -81,6 +82,7 @@ function PlayShell({ children }: { children: React.ReactNode }) {
       ticker={ticker}
       topRight={
         <>
+          {clock && <Icon name="status-turn-timer" alt="" size={14} style={{ marginRight: 6 }} />}
           {clock}
           <span className="blink">_</span>
           <span style={{ marginLeft: 12, color: "var(--text-tertiary)" }}>{me.user?.email}</span>

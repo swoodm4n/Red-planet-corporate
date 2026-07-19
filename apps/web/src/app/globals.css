@@ -352,6 +352,8 @@ input.console-input::placeholder, textarea.console-input::placeholder { color: v
 /* Icon + label pairing used in tables, rosters and pickers. */
 .icon-label { display: inline-flex; align-items: center; gap: 7px; }
 .icon-cell { display: flex; align-items: center; gap: 8px; }
+.res-chip .icon { align-self: center; }
+.res-chip { align-items: center; }
 
 /* ===== MISC ===== */
 .muted-note { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 8px 14px; border-left: 2px solid var(--border-dim); margin: 10px 0; }

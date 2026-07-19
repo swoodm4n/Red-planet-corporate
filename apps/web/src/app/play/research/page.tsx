@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePlayer } from "@/lib/client/gameContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
+import { Icon } from "@/lib/client/Icon";
 
 interface Proposal {
   id: string;
@@ -60,7 +61,7 @@ export default function ResearchPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">RESEARCH ADJUDICATION</div>
+          <div className="page-title icon-label"><Icon name="action-research" alt="" size={20} />RESEARCH ADJUDICATION</div>
           <div className="page-subtitle">Propose a freeform research effect in plain text. The game master rules on it and grants structured effects (§10.3, D-047).</div>
         </div>
       </div>

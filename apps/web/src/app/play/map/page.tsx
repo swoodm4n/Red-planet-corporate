@@ -6,6 +6,8 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { DashboardResponse } from "@/lib/client/types";
 import { hexLabel, titleCase } from "@/lib/client/labels";
+import { Icon, BuildingIcon } from "@/lib/client/Icon";
+import { buildingIcon } from "@/lib/client/icons";
 
 const COLS = 12;
 const ROWS = 8;
@@ -87,6 +89,18 @@ export default function MapPage() {
     return "";
   }
 
+  // Pick the most notable pixel-art icon to render in a hex (HQ > Transit Hub >
+  // first building), or the Landing Zone terrain marker. Falls back to text.
+  function cellIconName(c: Cell): string | null {
+    if (c.terrain === "LANDING_ZONE") return "landing-zone";
+    const priority = ["HEADQUARTERS", "TRANSIT_HUB"];
+    for (const t of priority) {
+      if (c.buildings.some((b) => b.type === t)) return buildingIcon(t);
+    }
+    if (c.buildings.length > 0) return buildingIcon(c.buildings[0].type);
+    return null;
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -111,9 +125,10 @@ export default function MapPage() {
                     const col = ci + 1;
                     const c = cells.get(`${col},${row}`);
                     if (!c) return <div className="hex fog" key={col} />;
+                    const iconName = cellIconName(c);
                     return (
                       <div className={cellClass(c)} key={col} title={`${hexLabel(col, row)} — ${titleCase(c.terrain)}`} onClick={() => setSel(`${col},${row}`)}>
-                        {cellLabel(c)}
+                        {iconName ? <Icon name={iconName} alt="" size={30} /> : cellLabel(c)}
                       </div>
                     );
                   })}
@@ -125,8 +140,8 @@ export default function MapPage() {
             <div className="legend-item"><div className="legend-swatch" style={{ background: "var(--green-dim)", border: "1px solid var(--green-bright)" }} />HQ</div>
             <div className="legend-item"><div className="legend-swatch" style={{ background: "var(--green-faint)", border: "1px solid var(--green-dim)" }} />Your claim</div>
             <div className="legend-item"><div className="legend-swatch" style={{ background: "#3A1414", border: "1px solid #6B2424" }} />Rival claim</div>
-            <div className="legend-item"><div className="legend-swatch" style={{ background: "var(--cyan)" }} />Landing Zone</div>
-            <div className="legend-item"><div className="legend-swatch" style={{ boxShadow: "inset 0 0 0 2px var(--red)" }} />Closed border vs you</div>
+            <div className="legend-item"><Icon name="landing-zone" alt="" size={14} />Landing Zone</div>
+            <div className="legend-item"><Icon name="status-closed-border" alt="" size={14} />Closed border vs you</div>
             <div className="legend-item"><div className="legend-swatch" style={{ background: "#1A1A1A" }} />Impassable</div>
           </div>
         </div>
@@ -150,7 +165,7 @@ export default function MapPage() {
                   <div className="detail-row"><span className="detail-label">Buildings</span><span className="detail-value">{selCell.buildings.length || "None"}</span></div>
                   {selCell.buildings.map((b) => (
                     <div className="detail-row" key={b.id}>
-                      <span className="detail-label">&nbsp;&nbsp;{titleCase(b.type)} ({b.tier})</span>
+                      <span className="detail-label icon-label"><BuildingIcon type={b.type} size={16} />{titleCase(b.type)} ({b.tier})</span>
                       <span className="detail-value td-dim">{b.subName}</span>
                     </div>
                   ))}
@@ -165,11 +180,11 @@ export default function MapPage() {
               <div className="muted-note" style={{ margin: "0 0 10px 0" }}>All your Transit Hubs + the Landing Zone form one jump network (§9.4).</div>
               {transitHubs.filter((c) => c.buildings.some((b) => b.subId === subdivisionId && b.type === "TRANSIT_HUB")).map((c) => (
                 <div className="detail-row" key={`${c.col},${c.row}`}>
-                  <span className="detail-label">Transit Hub {hexLabel(c.col, c.row)}</span>
+                  <span className="detail-label icon-label"><Icon name="transit-hub" alt="" size={16} />Transit Hub {hexLabel(c.col, c.row)}</span>
                   <span className="detail-value" style={{ color: "var(--green-bright)" }}>ACTIVE</span>
                 </div>
               ))}
-              <div className="detail-row"><span className="detail-label">Landing Zone</span><span className="detail-value" style={{ color: "var(--cyan)" }}>UNIVERSAL</span></div>
+              <div className="detail-row"><span className="detail-label icon-label"><Icon name="landing-zone" alt="" size={16} />Landing Zone</span><span className="detail-value" style={{ color: "var(--cyan)" }}>UNIVERSAL</span></div>
             </div>
           </div>
         </div>

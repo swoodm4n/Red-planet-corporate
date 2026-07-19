@@ -6,6 +6,7 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { EngineEvent } from "@/lib/client/types";
 import { titleCase } from "@/lib/client/labels";
+import { Icon } from "@/lib/client/Icon";
 
 interface TurnIndexRow {
   turnNumber: number;
@@ -59,7 +60,11 @@ export default function TurnsPage() {
                   {turns.slice().reverse().map((t) => (
                     <tr key={t.turnNumber} onClick={() => openTurn(t.turnNumber)} style={{ cursor: "pointer" }}>
                       <td>T{t.turnNumber}</td>
-                      <td className="td-dim">{t.eventJson?.name ?? "—"}</td>
+                      <td className="td-dim">
+                        {t.eventJson && t.eventJson.scope !== "NONE"
+                          ? <span className="icon-label"><Icon name="status-alert" alt="" size={14} />{t.eventJson.name}</span>
+                          : (t.eventJson?.name ?? "—")}
+                      </td>
                     </tr>
                   ))}
                   {turns.length === 0 && <tr><td colSpan={2} className="td-dim">No turns resolved yet.</td></tr>}
