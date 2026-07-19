@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAdmin } from "@/lib/client/adminContext";
 import { countdown, PARENT_LABELS } from "@/lib/client/labels";
+import { Icon } from "@/lib/client/Icon";
 
 export default function OverviewPage() {
   const { games, gameId, subdivisions, pendingRegistrations, pendingResearch } = useAdmin();
@@ -50,7 +51,7 @@ export default function OverviewPage() {
         </Link>
         <Link href="/admin/research" className="tile-link">
           <div className="stat-block">
-            <div className="stat-label">PENDING RESEARCH</div>
+            <div className="stat-label icon-label"><Icon name="action-research" alt="" size={13} />PENDING RESEARCH</div>
             <div className={`stat-value ${pendingResearch ? "big-attn" : ""}`}>{pendingResearch ?? "—"}</div>
             <div className="stat-foot">{pendingResearch ? "awaiting a ruling →" : "none waiting"}</div>
           </div>
@@ -94,10 +95,10 @@ export default function OverviewPage() {
         <div className="panel-head"><span>&#9635; QUICK ACTIONS</span></div>
         <div className="panel-body">
           <div className="btn-row" style={{ flexWrap: "wrap" }}>
-            <Link href="/admin/turns" className="btn btn-sm">TURN CONTROL</Link>
-            <Link href="/admin/events" className="btn btn-sm">TRIGGER EVENT</Link>
-            <Link href="/admin/announcements" className="btn btn-sm">POST ANNOUNCEMENT</Link>
-            <Link href="/admin/state" className="btn btn-sm">STATE EDITOR</Link>
+            <Link href="/admin/turns" className="btn btn-sm icon-label"><Icon name="status-turn-timer" alt="" size={14} />TURN CONTROL</Link>
+            <Link href="/admin/events" className="btn btn-sm icon-label"><Icon name="status-alert" alt="" size={14} />TRIGGER EVENT</Link>
+            <Link href="/admin/announcements" className="btn btn-sm icon-label"><Icon name="status-earth-relations" alt="" size={14} />POST ANNOUNCEMENT</Link>
+            <Link href="/admin/state" className="btn btn-sm icon-label"><Icon name="action-settings" alt="" size={14} />STATE EDITOR</Link>
             <Link href="/admin/audit" className="btn btn-sm btn-ghost">AUDIT LOG</Link>
           </div>
         </div>

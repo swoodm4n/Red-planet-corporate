@@ -7,6 +7,7 @@ import { api } from "@/lib/client/api";
 import type { ReportResponse } from "@/lib/client/types";
 import { PARENT_LABELS, hexLabel, titleCase } from "@/lib/client/labels";
 import { ConfirmButton } from "@/lib/client/Confirm";
+import { BuildingIcon, ResourceIcon } from "@/lib/client/Icon";
 
 interface Slot {
   subdivisionId: number;
@@ -154,14 +155,23 @@ export default function SubdivisionsPage() {
               <div className="stat-block"><div className="stat-label">COMPOSITE</div><div className="stat-value">{report.scoring.composite}</div></div>
               <div className="stat-block"><div className="stat-label">PERSONNEL</div><div className="stat-value cyan">{report.personnel.length}</div></div>
             </div>
-            <div className="detail-row"><span className="detail-label">Resources</span><span className="detail-value">E {report.resources.ENERGY} · Min {report.resources.MINERALS} · W {report.resources.WATER} · F {report.resources.FOOD} · R {report.resources.RESEARCH}</span></div>
+            <div className="detail-row">
+              <span className="detail-label">Resources</span>
+              <span className="detail-value icon-label" style={{ flexWrap: "wrap", justifyContent: "flex-end", gap: 10 }}>
+                <span className="icon-label" title="Energy"><ResourceIcon resource="ENERGY" size={16} />{report.resources.ENERGY}</span>
+                <span className="icon-label" title="Minerals"><ResourceIcon resource="MINERALS" size={16} />{report.resources.MINERALS}</span>
+                <span className="icon-label" title="Water"><ResourceIcon resource="WATER" size={16} />{report.resources.WATER}</span>
+                <span className="icon-label" title="Food"><ResourceIcon resource="FOOD" size={16} />{report.resources.FOOD}</span>
+                <span className="icon-label" title="Research"><ResourceIcon resource="RESEARCH" size={16} />{report.resources.RESEARCH}</span>
+              </span>
+            </div>
             <div className="section-label">BUILDINGS</div>
             <div className="table-scroll">
               <table>
                 <thead><tr><th>TYPE</th><th>HEX</th><th>STATUS</th><th>MODULES</th></tr></thead>
                 <tbody>
                   {report.buildings.map((b) => (
-                    <tr key={b.id}><td>{titleCase(b.type)}</td><td className="td-dim">{hexLabel(b.hex.col, b.hex.row)}</td><td className="td-dim">{b.status}</td><td className="td-dim">{b.modules.map((m) => m.type).join(", ") || "—"}</td></tr>
+                    <tr key={b.id}><td><span className="icon-label"><BuildingIcon type={b.type} size={18} />{titleCase(b.type)}</span></td><td className="td-dim">{hexLabel(b.hex.col, b.hex.row)}</td><td className="td-dim">{b.status}</td><td className="td-dim">{b.modules.map((m) => m.type).join(", ") || "—"}</td></tr>
                   ))}
                 </tbody>
               </table>

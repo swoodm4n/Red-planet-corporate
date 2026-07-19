@@ -5,6 +5,7 @@ import { useAdmin } from "@/lib/client/adminContext";
 import { api } from "@/lib/client/api";
 import { StateEditBuilder, type StateEdit } from "@/lib/client/StateEditBuilder";
 import { ConfirmButton } from "@/lib/client/Confirm";
+import { Icon } from "@/lib/client/Icon";
 
 export default function StateEditorPage() {
   const { gameId, subdivisions } = useAdmin();
@@ -27,7 +28,7 @@ export default function StateEditorPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">STATE EDITOR</div>
+          <div className="page-title icon-label"><Icon name="action-settings" alt="" size={20} />STATE EDITOR</div>
           <div className="page-subtitle">Direct structured edits to the live game snapshot for game #{gameId} (D-046).</div>
         </div>
       </div>

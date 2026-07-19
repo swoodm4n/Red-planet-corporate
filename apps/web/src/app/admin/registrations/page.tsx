@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useAdmin } from "@/lib/client/adminContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
-import { PARENT_LABELS } from "@/lib/client/labels";
+import { PARENT_LABELS, PERSONNEL_LABELS } from "@/lib/client/labels";
 import { ConfirmButton } from "@/lib/client/Confirm";
+import { PersonnelIcon } from "@/lib/client/Icon";
 
 interface Registration {
   id: string;
@@ -100,7 +101,15 @@ export default function RegistrationsPage() {
                     <td>{r.email}</td>
                     <td className="td-dim">{r.displayName ?? "—"}{r.prefDesiredName ? ` (${r.prefDesiredName})` : ""}</td>
                     <td className="td-dim">{r.prefParentCompany ? `${PARENT_LABELS[r.prefParentCompany] ?? r.prefParentCompany} / ${r.prefParentPerk ?? "?"}` : "—"}</td>
-                    <td className="td-dim">{r.prefChoicePersonnel?.join(", ") ?? "—"}</td>
+                    <td className="td-dim">
+                      {r.prefChoicePersonnel?.length ? (
+                        <span style={{ display: "inline-flex", flexWrap: "wrap", gap: 8 }}>
+                          {r.prefChoicePersonnel.map((t, i) => (
+                            <span className="icon-label" key={i} title={PERSONNEL_LABELS[t] ?? t}><PersonnelIcon type={t} size={16} />{PERSONNEL_LABELS[t] ?? t}</span>
+                          ))}
+                        </span>
+                      ) : "—"}
+                    </td>
                     <td><span className={`badge ${r.status === "APPROVED" ? "badge-green" : r.status === "REJECTED" ? "badge-red" : "badge-amber"}`}>{r.status}</span></td>
                     <td>
                       {r.status === "PENDING" ? (

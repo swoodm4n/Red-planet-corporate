@@ -7,6 +7,7 @@ import { api } from "@/lib/client/api";
 import { StateEditBuilder, type StateEdit } from "@/lib/client/StateEditBuilder";
 import { ConfirmButton } from "@/lib/client/Confirm";
 import type { SubdivisionSlot } from "@/lib/client/types";
+import { Icon } from "@/lib/client/Icon";
 
 interface Proposal {
   id: string;
@@ -89,7 +90,7 @@ export default function AdminResearchPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">RESEARCH ADJUDICATION</div>
+          <div className="page-title icon-label"><Icon name="action-research" alt="" size={20} />RESEARCH ADJUDICATION</div>
           <div className="page-subtitle">Rule on freeform proposals; grant effects as structured edits only (D-047).</div>
         </div>
         <div className="page-meta">

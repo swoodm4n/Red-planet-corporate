@@ -5,6 +5,7 @@ import { useAdmin } from "@/lib/client/adminContext";
 import { api } from "@/lib/client/api";
 import { StateEditBuilder, type StateEdit } from "@/lib/client/StateEditBuilder";
 import { ConfirmButton } from "@/lib/client/Confirm";
+import { Icon } from "@/lib/client/Icon";
 
 // Canonical events (GAME_SPEC §17) expressed as the structured effects they
 // produce. Selecting one pre-fills the builder; the GM can then tweak scope,
@@ -65,7 +66,7 @@ export default function EventsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">MANUAL EVENTS</div>
+          <div className="page-title icon-label"><Icon name="status-alert" alt="" size={20} />MANUAL EVENTS</div>
           <div className="page-subtitle">Trigger any event as one or more structured effects for game #{gameId}. There is no free-text execution (D-046).</div>
         </div>
       </div>
