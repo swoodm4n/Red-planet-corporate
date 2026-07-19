@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/client/api";
 import { useAdmin } from "@/lib/client/adminContext";
 import { eventScopeTone, type TurnIndexResponse, type TurnIndexRow } from "./turnLog";
@@ -13,9 +13,15 @@ import { eventScopeTone, type TurnIndexResponse, type TurnIndexRow } from "./tur
  * log lives on the detail endpoint, so no invalid-order count is available here.
  */
 export function TurnHistory() {
-  const { gameId } = useAdmin();
+  const { gameId, subdivisions } = useAdmin();
   const [rows, setRows] = useState<TurnIndexRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  const subName = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of subdivisions ?? []) map.set(s.subdivisionId, s.name);
+    return (id: number) => map.get(id) ?? `Sub #${id}`;
+  }, [subdivisions]);
 
   useEffect(() => {
     setRows(null);
@@ -70,7 +76,7 @@ export function TurnHistory() {
                           <span className="td-dim">— quiet turn —</span>
                         )}
                       </td>
-                      <td className="td-dim">{leader ? `Sub #${leader.subdivisionId}` : "—"}</td>
+                      <td className="td-dim">{leader ? subName(leader.subdivisionId) : "—"}</td>
                       <td>
                         <Link className="btn btn-ghost btn-sm" href={`/admin/turns/${t.turnNumber}`}>
                           VIEW LOG ▸
