@@ -6,6 +6,7 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { ReportResponse } from "@/lib/client/types";
 import { PARENT_LABELS, hexLabel, titleCase } from "@/lib/client/labels";
+import { ConfirmButton } from "@/lib/client/Confirm";
 
 interface Slot {
   subdivisionId: number;
@@ -43,17 +44,18 @@ export default function SubdivisionsPage() {
 
   async function assign(sid: number) {
     const userId = assignPick[sid];
-    if (!userId) { setMsg("Pick a user to assign."); return; }
+    if (!userId) { setMsg("Pick a user to assign first."); return; }
     try {
       await api.post(`/api/admin/games/${gameId}/subdivisions/${sid}/assign`, { userId });
-      setMsg(`Assigned user to subdivision ${sid}.`); load(); refresh();
-    } catch (e) { setMsg((e as Error).message); }
+      const u = users.find((x) => x.id === userId);
+      setMsg(`Seated ${u?.email ?? "user"} in subdivision #${sid}.`); load(); refresh();
+    } catch (e) { setMsg((e as Error).message); throw e; }
   }
   async function retire(sid: number) {
     try {
       await api.post(`/api/admin/games/${gameId}/subdivisions/${sid}/retire`, {});
-      setMsg(`Subdivision ${sid} queued for retirement (applies next resolution).`); load();
-    } catch (e) { setMsg((e as Error).message); }
+      setMsg(`Subdivision #${sid} queued for retirement (applies at the next resolution).`); load();
+    } catch (e) { setMsg((e as Error).message); throw e; }
   }
   async function viewReport(sid: number) {
     setMsg(null);
@@ -76,34 +78,59 @@ export default function SubdivisionsPage() {
 
       {msg && <div className="ok-box">{msg}</div>}
 
+      <div className="help-box">
+        Each row is one of the six fixed parent-company slots. <strong>Assign</strong> seats an approved player in a slot (reassigning moves them and unseats whoever was there). <strong>View</strong> opens that subdivision&apos;s private report. <strong>Retire</strong> removes a slot from the game at the next resolution.
+      </div>
+
       <div className="panel">
         <div className="panel-head"><span>&#9635; SLOTS ({slots.length})</span></div>
         <div className="panel-body tight">
           <div className="table-scroll">
             <table>
               <thead>
-                <tr><th>ID</th><th>NAME</th><th>PARENT</th><th className="td-num">ER</th><th className="td-num">RANK</th><th className="td-num">COMP</th><th>STATUS</th><th>ASSIGNED</th><th>ACTIONS</th></tr>
+                <tr><th>ID</th><th>NAME / PARENT</th><th className="td-num" title="Earth Relations (0-30)">EARTH REL</th><th className="td-num" title="Current standings rank">RANK</th><th className="td-num" title="Composite score">COMPOSITE</th><th>STATUS</th><th>SEATED PLAYER</th><th>ACTIONS</th></tr>
               </thead>
               <tbody>
                 {slots.map((s) => (
                   <tr key={s.subdivisionId}>
                     <td>#{s.subdivisionId}</td>
-                    <td><strong>{s.name}</strong></td>
-                    <td className="td-dim">{PARENT_LABELS[s.parentCompany] ?? s.parentCompany}</td>
+                    <td>
+                      <strong>{s.name}</strong>
+                      <div className="td-dim" style={{ fontSize: 10 }}>{PARENT_LABELS[s.parentCompany] ?? s.parentCompany}{s.parentPerk ? ` · Perk ${s.parentPerk}` : ""}</div>
+                    </td>
                     <td className="td-num">{s.earthRelations}</td>
                     <td className="td-num">{s.rank}</td>
                     <td className="td-num">{s.composite}</td>
                     <td><span className={`badge ${s.status === "ACTIVE" ? "badge-green" : "badge-red"}`}>{s.status}</span></td>
-                    <td className="td-dim">{s.assignedTo?.email ?? "—"}</td>
+                    <td className="td-dim">{s.assignedTo?.email ?? <span style={{ color: "var(--text-tertiary)" }}>unassigned</span>}</td>
                     <td>
                       <div className="btn-row" style={{ alignItems: "center" }}>
                         <select className="console-input inline-input" value={assignPick[s.subdivisionId] ?? ""} onChange={(e) => setAssignPick((p) => ({ ...p, [s.subdivisionId]: e.target.value }))}>
-                          <option value="">user…</option>
+                          <option value="">seat player…</option>
                           {users.map((u) => <option key={u.id} value={u.id}>{u.email}</option>)}
                         </select>
-                        <button className="btn btn-sm" onClick={() => assign(s.subdivisionId)}>ASSIGN</button>
+                        {s.assignedTo ? (
+                          <ConfirmButton
+                            className="btn btn-sm" danger={false} confirmClass="btn-primary"
+                            disabled={!assignPick[s.subdivisionId]}
+                            title="Reassign this slot?"
+                            confirmLabel="REASSIGN"
+                            message={<>Slot #{s.subdivisionId} ({s.name}) is currently seated by <strong>{s.assignedTo.email}</strong>. Reassigning unseats them and seats the selected player instead.</>}
+                            onConfirm={() => assign(s.subdivisionId)}
+                          >ASSIGN</ConfirmButton>
+                        ) : (
+                          <button className="btn btn-sm" disabled={!assignPick[s.subdivisionId]} onClick={() => assign(s.subdivisionId)}>ASSIGN</button>
+                        )}
                         <button className="btn btn-sm btn-ghost" onClick={() => viewReport(s.subdivisionId)}>VIEW</button>
-                        <button className="btn btn-sm btn-danger" onClick={() => retire(s.subdivisionId)}>RETIRE</button>
+                        <ConfirmButton
+                          className="btn btn-sm btn-danger"
+                          disabled={s.status !== "ACTIVE"}
+                          title="Retire this subdivision?"
+                          confirmLabel="RETIRE SLOT"
+                          message={<>Queue subdivision #{s.subdivisionId} (<strong>{s.name}</strong>) for retirement, applied at the next resolution.</>}
+                          warn={<>Its buildings become derelict, claimed hexes return to unclaimed, personnel and vehicles are removed, and its shares freeze. It is excluded from standings (D-032).</>}
+                          onConfirm={() => retire(s.subdivisionId)}
+                        >RETIRE</ConfirmButton>
                       </div>
                     </td>
                   </tr>

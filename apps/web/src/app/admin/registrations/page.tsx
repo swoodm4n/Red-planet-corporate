@@ -5,6 +5,7 @@ import { useAdmin } from "@/lib/client/adminContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import { PARENT_LABELS } from "@/lib/client/labels";
+import { ConfirmButton } from "@/lib/client/Confirm";
 
 interface Registration {
   id: string;
@@ -55,12 +56,12 @@ export default function RegistrationsPage() {
       load(); refresh();
     } catch (e) { setMsg((e as Error).message); }
   }
-  async function reject(userId: string) {
+  async function reject(userId: string, reason?: string) {
     try {
-      await api.post(`/api/admin/registrations/${userId}/reject`, { reason: "Rejected via GM console" });
+      await api.post(`/api/admin/registrations/${userId}/reject`, { reason: reason || undefined });
       setMsg("Registration rejected.");
       load();
-    } catch (e) { setMsg((e as Error).message); }
+    } catch (e) { setMsg((e as Error).message); throw e; }
   }
 
   return (
@@ -78,6 +79,12 @@ export default function RegistrationsPage() {
       </div>
 
       {msg && <div className="ok-box">{msg}</div>}
+
+      {status === "PENDING" && (
+        <div className="help-box">
+          A player&apos;s parent/perk/personnel choices below are <strong>advisory preferences only</strong> — they do not auto-configure anything (D-014). To honour a request, approve them into that parent&apos;s slot; you can reconfigure later in the State Editor. Approving seats the player in the chosen subdivision immediately.
+        </div>
+      )}
 
       <div className="panel">
         <div className="panel-head"><span>&#9635; {status} REGISTRATIONS ({regs.length})</span></div>
@@ -107,15 +114,29 @@ export default function RegistrationsPage() {
                             ))}
                           </select>
                           <button className="btn btn-sm btn-primary" onClick={() => approve(r.id)}>APPROVE</button>
-                          <button className="btn btn-sm btn-danger" onClick={() => reject(r.id)}>REJECT</button>
+                          <ConfirmButton
+                            className="btn btn-sm btn-danger"
+                            title="Reject this registration?"
+                            confirmLabel="REJECT"
+                            message={<>Reject the registration for <strong>{r.email}</strong>. They will not be able to play unless they register again.</>}
+                            promptLabel="Reason (optional, not shown to the player)"
+                            promptPlaceholder="e.g. duplicate account"
+                            onConfirm={(reason) => reject(r.id, reason)}
+                          >REJECT</ConfirmButton>
                         </div>
                       ) : (
-                        <span className="td-dim">{r.assignment ? `sub ${r.assignment.subdivisionId}` : "—"}</span>
+                        <span className="td-dim">{r.assignment ? `subdivision #${r.assignment.subdivisionId}` : "—"}</span>
                       )}
                     </td>
                   </tr>
                 ))}
-                {regs.length === 0 && <tr><td colSpan={6} className="td-dim">No registrations.</td></tr>}
+                {regs.length === 0 && (
+                  <tr><td colSpan={6} style={{ textAlign: "center", color: "var(--text-tertiary)", padding: 28 }}>
+                    {status === "PENDING"
+                      ? "No pending registrations. When players sign up at /register, they will appear here for approval."
+                      : `No ${status === "ALL" ? "" : status.toLowerCase() + " "}registrations.`}
+                  </td></tr>
+                )}
               </tbody>
             </table>
           </div>

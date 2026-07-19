@@ -5,6 +5,8 @@ import { useAdmin } from "@/lib/client/adminContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import { StateEditBuilder, type StateEdit } from "@/lib/client/StateEditBuilder";
+import { ConfirmButton } from "@/lib/client/Confirm";
+import type { SubdivisionSlot } from "@/lib/client/types";
 
 interface Proposal {
   id: string;
@@ -16,14 +18,13 @@ interface Proposal {
   user?: { id: string; email: string } | null;
 }
 
-function ResolveForm({ proposal, onDone }: { proposal: Proposal; onDone: () => void }) {
+function ResolveForm({ proposal, subdivisions, onDone }: { proposal: Proposal; subdivisions: SubdivisionSlot[] | null; onDone: () => void }) {
   const [response, setResponse] = useState("");
   const [effects, setEffects] = useState<StateEdit[]>([]);
   const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   async function resolve(status: "APPROVED" | "REJECTED") {
-    setBusy(true); setErr(null);
+    setErr(null);
     try {
       await api.post(`/api/admin/research-proposals/${proposal.id}/resolve`, {
         status,
@@ -31,28 +32,43 @@ function ResolveForm({ proposal, onDone }: { proposal: Proposal; onDone: () => v
         grantedEffects: status === "APPROVED" ? effects : undefined,
       });
       onDone();
-    } catch (e) { setErr((e as Error).message); setBusy(false); }
+    } catch (e) { setErr((e as Error).message); throw e; }
   }
 
   return (
     <div className="panel-body" style={{ borderTop: "1px solid var(--border-dim)" }}>
       {err && <div className="error-box">{err}</div>}
+      <div className="help-box">
+        The player&apos;s proposal text is <strong>never executed</strong>. If you approve, only the structured effects you attach below take effect — applied through the audited edit pipeline (D-047). Approve with an empty effect list to acknowledge a proposal that grants nothing mechanical.
+      </div>
       <label className="field">
-        <span className="field-label">GM ruling / response</span>
-        <textarea className="console-input" value={response} onChange={(e) => setResponse(e.target.value)} />
+        <span className="field-label">GM ruling / response (shown to the player)</span>
+        <textarea className="console-input" value={response} onChange={(e) => setResponse(e.target.value)} placeholder="Explain your decision…" />
       </label>
-      <span className="field-label">Granted structured effects (on approval)</span>
-      <StateEditBuilder edits={effects} onChange={setEffects} />
+      <span className="field-label">Granted structured effects (applied only on approval)</span>
+      <StateEditBuilder edits={effects} onChange={setEffects} subdivisions={subdivisions} />
       <div className="btn-row" style={{ marginTop: 12 }}>
-        <button className="btn btn-primary" disabled={busy} onClick={() => resolve("APPROVED")}>APPROVE + GRANT</button>
-        <button className="btn btn-danger" disabled={busy} onClick={() => resolve("REJECTED")}>REJECT</button>
+        <ConfirmButton
+          className="btn btn-primary" danger={false} confirmClass="btn-primary"
+          title="Approve research proposal?"
+          confirmLabel="APPROVE + GRANT"
+          message={<>Approve this proposal and apply <strong>{effects.length} granted effect(s)</strong>. This is recorded in the audit log.</>}
+          onConfirm={() => resolve("APPROVED")}
+        >APPROVE + GRANT</ConfirmButton>
+        <ConfirmButton
+          className="btn btn-danger"
+          title="Reject research proposal?"
+          confirmLabel="REJECT PROPOSAL"
+          message={<>Reject this proposal. No effects are applied. The player sees your ruling if you wrote one.</>}
+          onConfirm={() => resolve("REJECTED")}
+        >REJECT</ConfirmButton>
       </div>
     </div>
   );
 }
 
 export default function AdminResearchPage() {
-  const { gameId } = useAdmin();
+  const { gameId, subdivisions } = useAdmin();
   const [status, setStatus] = useState("PENDING");
   const [proposals, setProposals] = useState<Proposal[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +99,11 @@ export default function AdminResearchPage() {
         </div>
       </div>
 
-      {proposals.length === 0 && <div className="muted-note">No proposals.</div>}
+      {proposals.length === 0 && (
+        <div className="panel"><div className="panel-body" style={{ textAlign: "center", color: "var(--text-tertiary)", padding: 32 }}>
+          No {status === "ALL" ? "" : status.toLowerCase() + " "}research proposals. Players submit freeform research ideas from their own report; they will appear here for you to rule on.
+        </div></div>
+      )}
       {proposals.map((p) => (
         <div className="panel" key={p.id}>
           <div className="panel-head">
@@ -97,7 +117,7 @@ export default function AdminResearchPage() {
             <div style={{ fontSize: 12, whiteSpace: "pre-wrap" }}>{p.proposalText}</div>
             {p.adminResponse && <div className="muted-note" style={{ marginTop: 8 }}>Ruling: {p.adminResponse}</div>}
           </div>
-          {openId === p.id && p.status === "PENDING" && <ResolveForm proposal={p} onDone={() => { setOpenId(null); load(); }} />}
+          {openId === p.id && p.status === "PENDING" && <ResolveForm proposal={p} subdivisions={subdivisions} onDone={() => { setOpenId(null); load(); }} />}
         </div>
       ))}
     </div>
