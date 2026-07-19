@@ -349,6 +349,65 @@ input.console-input::placeholder, textarea.console-input::placeholder { color: v
 .ok-box { border: 1px solid var(--green-dim); color: var(--green-bright); padding: 10px 14px; font-size: 12px; margin: 10px 0; background: rgba(77,255,126,0.06); }
 .loading { color: var(--text-tertiary); padding: 40px; text-align: center; font-size: 12px; letter-spacing: 0.1em; }
 
+/* ===== MODAL / CONFIRM ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; animation: fadein 0.12s ease;
+}
+.modal {
+  width: 100%; max-width: 480px; background: var(--bg-panel);
+  border: 1px solid var(--border); box-shadow: 0 0 50px rgba(0,0,0,0.7);
+}
+.modal-head {
+  padding: 12px 16px; background: var(--bg-panel-2);
+  border-bottom: 1px solid var(--border-dim);
+  font-size: 12px; letter-spacing: 0.08em; color: var(--green-bright); font-weight: 700;
+}
+.modal-head.danger { color: var(--red); border-bottom-color: var(--red); }
+.modal-body { padding: 16px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.modal-body strong { color: var(--text-primary); }
+.modal-warn { color: var(--amber); display: block; margin-top: 10px; }
+.modal-foot {
+  padding: 12px 16px; border-top: 1px solid var(--border-dim);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+/* ===== INLINE HELP ===== */
+.help-box {
+  border-left: 2px solid var(--cyan); background: rgba(111,227,255,0.05);
+  padding: 10px 14px; font-size: 11px; color: var(--text-secondary);
+  margin: 10px 0; line-height: 1.65;
+}
+.help-box code { color: var(--cyan); background: var(--bg-inset); padding: 0 3px; }
+.help-box .help-title { color: var(--cyan); font-weight: 600; display: block; margin-bottom: 4px; letter-spacing: 0.04em; }
+.field-hint { font-size: 10px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.5; }
+.op-desc { font-size: 10px; color: var(--text-secondary); margin-top: 6px; font-style: italic; }
+
+/* ===== STATUS DOT (topbar / overview) ===== */
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.status-dot.active { background: var(--green-bright); box-shadow: 0 0 6px var(--green-bright); }
+.status-dot.paused { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.status-dot.completed { background: var(--text-tertiary); }
+.status-dot.overdue { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+/* ===== OVERVIEW TILES ===== */
+.tile-link { display: block; text-decoration: none; }
+.tile-link:hover { text-decoration: none; }
+.tile-link:hover .stat-block { border-color: var(--green-dim); }
+.stat-value.big-attn { color: var(--amber); }
+
+/* ===== EDIT SUMMARY CHIP ===== */
+.edit-chip {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  padding: 10px 12px; border: 1px solid var(--green-dim); background: var(--bg-panel-2);
+  margin-bottom: 8px; font-size: 11px;
+}
+.edit-chip-op { color: var(--green-bright); font-weight: 600; letter-spacing: 0.04em; }
+.edit-chip-detail { color: var(--text-secondary); margin-top: 3px; }
+.edit-chip-raw { color: var(--text-tertiary); font-size: 10px; margin-top: 3px; }
+
 /* ===== AUTH SCREENS ===== */
 .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
 .auth-card { width: 100%; max-width: 440px; background: var(--bg-panel); border: 1px solid var(--border); }

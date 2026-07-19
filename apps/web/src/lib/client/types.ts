@@ -31,6 +31,18 @@ export interface GameSummary {
   yourSubdivisionId: number | null;
 }
 
+export interface SubdivisionSlot {
+  subdivisionId: number;
+  name: string;
+  parentCompany: string;
+  parentPerk?: string;
+  status: string;
+  earthRelations?: number;
+  composite?: number;
+  rank?: number;
+  assignedTo: { id: string; email: string; displayName?: string | null } | null;
+}
+
 export interface MarketRow {
   resource: string;
   livePriceFp: number;
