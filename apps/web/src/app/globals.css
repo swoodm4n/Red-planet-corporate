@@ -338,6 +338,21 @@ input.console-input::placeholder, textarea.console-input::placeholder { color: v
 .leader-chip-cat { font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.08em; }
 .leader-chip-name { font-size: 13px; color: var(--green-bright); font-weight: 600; margin-top: 3px; }
 
+/* ===== ICONS ===== */
+/* Pixel-art PNGs (192x192, transparent). Nearest-neighbour keeps them crisp when
+   scaled down; vertical-align keeps them centred against inline text. */
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  flex-shrink: 0;
+  user-select: none;
+}
+/* Icon + label pairing used in tables, rosters and pickers. */
+.icon-label { display: inline-flex; align-items: center; gap: 7px; }
+.icon-cell { display: flex; align-items: center; gap: 8px; }
+
 /* ===== MISC ===== */
 .muted-note { font-size: 11px; color: var(--text-tertiary); font-style: italic; padding: 8px 14px; border-left: 2px solid var(--border-dim); margin: 10px 0; }
 .muted-note.red { border-left-color: var(--red); color: #D98A8A; }

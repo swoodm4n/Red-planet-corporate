@@ -8,6 +8,7 @@ import { api } from "@/lib/client/api";
 import { loadDraft, saveDraft, type DraftSubmission } from "@/lib/client/orders";
 import type { DashboardResponse, ReportResponse } from "@/lib/client/types";
 import { RESOURCE_LABELS, PHYSICAL_RESOURCES } from "@/lib/client/labels";
+import { Icon, ResourceIcon } from "@/lib/client/Icon";
 
 export default function MarketPage() {
   const { gameId, subdivisionId } = usePlayer();
@@ -120,10 +121,16 @@ export default function MarketPage() {
               <tbody>
                 {dash.market.map((m) => {
                   const stock = report?.own.resources[m.resource as keyof typeof report.own.resources];
+                  const net = m.cumulativeBought - m.cumulativeSold;
                   return (
                     <tr key={m.resource}>
-                      <td>{RESOURCE_LABELS[m.resource] ?? m.resource}</td>
-                      <td className="td-num">{m.livePrice.toFixed(2)} Cr</td>
+                      <td><span className="icon-label"><ResourceIcon resource={m.resource} size={18} />{RESOURCE_LABELS[m.resource] ?? m.resource}</span></td>
+                      <td className="td-num">
+                        <span className="icon-label" style={{ justifyContent: "flex-end" }}>
+                          {net !== 0 && <Icon name={net > 0 ? "status-price-up" : "status-price-down"} alt={net > 0 ? "trending up" : "trending down"} size={14} />}
+                          {m.livePrice.toFixed(2)} Cr
+                        </span>
+                      </td>
                       <td className="td-num td-dim">{(m.livePrice * 1.2).toFixed(2)} Cr</td>
                       <td className="td-num td-dim">{(m.livePrice * 0.8).toFixed(2)} Cr</td>
                       <td className="td-num">{stock ?? "—"}</td>

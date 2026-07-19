@@ -7,6 +7,7 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { ReportResponse } from "@/lib/client/types";
 import { PARENT_LABELS, PERSONNEL_LABELS, RESOURCE_LABELS, hexLabel, titleCase, unitDotClass } from "@/lib/client/labels";
+import { BuildingIcon, PersonnelIcon, HullIcon, ResourceIcon } from "@/lib/client/Icon";
 
 const CATS = ["economic", "industrial", "research", "territorial", "security", "intelligence"];
 
@@ -88,7 +89,7 @@ export default function ReportPage() {
       <div className="grid-4">
         {(["ENERGY", "MINERALS", "WATER", "FOOD", "RESEARCH"] as const).map((r) => (
           <div className="stat-block" key={r}>
-            <div className="stat-label">{RESOURCE_LABELS[r].toUpperCase()}</div>
+            <div className="stat-label icon-label"><ResourceIcon resource={r} size={14} />{RESOURCE_LABELS[r].toUpperCase()}</div>
             <div className="stat-value">{own.resources[r]}</div>
           </div>
         ))}
@@ -109,7 +110,7 @@ export default function ReportPage() {
                   <tbody>
                     {own.buildings.map((b) => (
                       <tr key={b.id}>
-                        <td>{titleCase(b.type)} <span className="td-dim">({b.tier})</span></td>
+                        <td><span className="icon-label"><BuildingIcon type={b.type} size={20} />{titleCase(b.type)} <span className="td-dim">({b.tier})</span></span></td>
                         <td className="td-dim">{hexLabel(b.hex.col, b.hex.row)}</td>
                         <td className="td-dim">{garrisonStr(b.garrison)}</td>
                         <td className="td-dim">{b.modules.length ? b.modules.map((m) => m.type.slice(0, 2)).join(",") : "—"}</td>
@@ -139,7 +140,7 @@ export default function ReportPage() {
                   <tbody>
                     {[...personnelByType.entries()].map(([type, e]) => (
                       <tr key={type}>
-                        <td><span className={unitDotClass(type)} style={{ marginRight: 7 }} />{PERSONNEL_LABELS[type] ?? type}</td>
+                        <td><span className="icon-label"><PersonnelIcon type={type} size={20} />{PERSONNEL_LABELS[type] ?? type}</span></td>
                         <td className="td-num">{e.total}</td>
                         <td className="td-num">{e.garrisoned}</td>
                         <td className="td-num" style={{ color: e.available ? "var(--green-bright)" : undefined }}>{e.available}</td>
@@ -162,7 +163,7 @@ export default function ReportPage() {
                       {own.vehicles.map((v) => (
                         <tr key={v.id}>
                           <td>#{v.id}</td>
-                          <td>{titleCase(v.hull)}</td>
+                          <td><span className="icon-label"><HullIcon hull={v.hull} size={20} />{titleCase(v.hull)}</span></td>
                           <td className="td-dim">{v.status}</td>
                           <td className="td-dim">{v.modules?.map((m) => m.type).join(", ") || "—"}</td>
                         </tr>

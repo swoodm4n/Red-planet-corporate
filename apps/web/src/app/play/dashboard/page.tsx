@@ -6,6 +6,7 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { DashboardResponse } from "@/lib/client/types";
 import { PARENT_LABELS, RESOURCE_LABELS, titleCase } from "@/lib/client/labels";
+import { Icon, ResourceIcon } from "@/lib/client/Icon";
 
 const CATS = ["economic", "industrial", "research", "territorial", "security", "intelligence"];
 
@@ -102,14 +103,22 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.market.map((m) => (
-                      <tr key={m.resource}>
-                        <td>{RESOURCE_LABELS[m.resource] ?? m.resource}</td>
-                        <td className="td-num">{m.livePrice.toFixed(2)} Cr</td>
-                        <td className="td-num td-dim">{m.cumulativeBought}</td>
-                        <td className="td-num td-dim">{m.cumulativeSold}</td>
-                      </tr>
-                    ))}
+                    {data.market.map((m) => {
+                      const net = m.cumulativeBought - m.cumulativeSold;
+                      return (
+                        <tr key={m.resource}>
+                          <td><span className="icon-label"><ResourceIcon resource={m.resource} size={18} />{RESOURCE_LABELS[m.resource] ?? m.resource}</span></td>
+                          <td className="td-num">
+                            <span className="icon-label" style={{ justifyContent: "flex-end" }}>
+                              {net !== 0 && <Icon name={net > 0 ? "status-price-up" : "status-price-down"} alt={net > 0 ? "trending up" : "trending down"} size={14} />}
+                              {m.livePrice.toFixed(2)} Cr
+                            </span>
+                          </td>
+                          <td className="td-num td-dim">{m.cumulativeBought}</td>
+                          <td className="td-num td-dim">{m.cumulativeSold}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -140,6 +149,7 @@ export default function DashboardPage() {
                 <div className="feed-line" key={i}>
                   <span className="feed-time">T{e.turnNumber}</span>
                   <span className="feed-text">
+                    {e.event.scope !== "NONE" && <Icon name="status-alert" alt="event" size={14} style={{ marginRight: 6 }} />}
                     <span className={e.event.scope === "NONE" ? "" : "hl"}>{e.event.name}</span>
                     {e.event.message && e.event.name !== e.event.message ? ` — ${e.event.message}` : ""}
                   </span>

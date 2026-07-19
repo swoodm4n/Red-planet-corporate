@@ -6,6 +6,7 @@ import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
 import type { DashboardResponse } from "@/lib/client/types";
 import { PARENT_LABELS, titleCase } from "@/lib/client/labels";
+import { Icon } from "@/lib/client/Icon";
 
 const CATS = ["economic", "industrial", "research", "territorial", "security", "intelligence"];
 
@@ -28,7 +29,7 @@ export default function StandingsPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <div className="page-title">COLONY STANDINGS <span className="dim">// TURN {data.turnNumber}</span></div>
+          <div className="page-title icon-label"><Icon name="status-standings" alt="" size={20} />COLONY STANDINGS <span className="dim">// TURN {data.turnNumber}</span></div>
           <div className="page-subtitle">Composite score is the sum of six weighted category scores (§12). Ties break by subdivision id.</div>
         </div>
         <div className="page-meta">{data.standings.standings.length} active subdivisions</div>

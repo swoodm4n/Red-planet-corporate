@@ -6,6 +6,7 @@ import { api } from "@/lib/client/api";
 import type { GameSummary } from "@/lib/client/types";
 import { countdown } from "@/lib/client/labels";
 import { ConfirmButton } from "@/lib/client/Confirm";
+import { TurnHistory } from "./TurnHistory";
 
 export default function TurnControlPage() {
   const { gameId, games, refresh } = useAdmin();
@@ -103,6 +104,8 @@ export default function TurnControlPage() {
           </div>
         </div>
       </div>
+
+      <TurnHistory />
     </div>
   );
 }

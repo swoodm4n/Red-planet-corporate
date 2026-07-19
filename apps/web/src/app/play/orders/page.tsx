@@ -34,6 +34,7 @@ import {
   titleCase,
   unitDotClass,
 } from "@/lib/client/labels";
+import { BuildingIcon, PersonnelIcon } from "@/lib/client/Icon";
 
 // Which optional param fields each action commonly needs (advisory — engine validates).
 const FIELD_HINTS: Record<string, string[]> = {
@@ -485,7 +486,8 @@ export default function OrdersPage() {
                   return (
                     <div key={b.id} className="bldg-card" style={{ cursor: "default" }}>
                       <div className="bldg-card-top">
-                        <span>
+                        <span className="icon-label">
+                          <BuildingIcon type={b.type} size={22} />
                           <span className="bldg-name">{buildingLabel(b.type)}</span>
                           <span className="bldg-hex">{hexLabel(b.hex.col, b.hex.row)}</span>
                         </span>
@@ -511,8 +513,10 @@ export default function OrdersPage() {
                       {assignable.map((p) => (
                         <tr key={p.id}>
                           <td>
-                            <span className={unitDotClass(p.type)} style={{ marginRight: 6 }} />
-                            {PERSONNEL_LABELS[p.type] ?? titleCase(p.type)} <span className="td-dim">#{p.id}</span>
+                            <span className="icon-label">
+                              <PersonnelIcon type={p.type} size={18} />
+                              <span>{PERSONNEL_LABELS[p.type] ?? titleCase(p.type)} <span className="td-dim">#{p.id}</span></span>
+                            </span>
                           </td>
                           <td>
                             <select className="console-input inline-input" style={{ width: "100%" }} value={draftAssignmentOf(p.id)} onChange={(e) => setGarrison(p.id, e.target.value)}>
@@ -621,7 +625,10 @@ export default function OrdersPage() {
                   const p = describeParams(a.params, own.buildings, rivals);
                   return (
                     <div className="order-slot filled" key={i}>
-                      <span><strong>{actionLabel(a.action)}</strong> — {where}{p ? ` · ${p}` : ""}</span>
+                      <span className="icon-label">
+                        {b ? <BuildingIcon type={b.type} size={18} /> : null}
+                        <span><strong>{actionLabel(a.action)}</strong> — {where}{p ? ` · ${p}` : ""}</span>
+                      </span>
                       <button className="btn btn-sm btn-ghost" onClick={() => setDraft((d) => d && { ...d, buildingActions: d.buildingActions.filter((_, j) => j !== i) })}>REMOVE</button>
                     </div>
                   );
@@ -685,10 +692,10 @@ export default function OrdersPage() {
                   const warn = !availableIds.has(a.unitId);
                   return (
                     <div className="order-slot filled" key={i}>
-                      <span>
-                        <span className={unitDotClass(u?.type ?? "")} style={{ marginRight: 8 }} />
-                        <strong>{actionLabel(a.action)}</strong> — {who}{parts.length ? ` · ${parts.join(", ")}` : ""}
-                        {warn && <span style={{ color: "var(--amber)" }}> (this unit is now garrisoned — unassign it or remove this action)</span>}
+                      <span className="icon-label">
+                        {u ? <PersonnelIcon type={u.type} size={18} /> : null}
+                        <span><strong>{actionLabel(a.action)}</strong> — {who}{parts.length ? ` · ${parts.join(", ")}` : ""}
+                        {warn && <span style={{ color: "var(--amber)" }}> (this unit is now garrisoned — unassign it or remove this action)</span>}</span>
                       </span>
                       <button className="btn btn-sm btn-ghost" onClick={() => setDraft((d) => d && { ...d, unitActions: d.unitActions.filter((_, j) => j !== i) })}>REMOVE</button>
                     </div>
