@@ -67,6 +67,66 @@ export interface HexView {
   ownerSubdivisionId: number | null;
 }
 
+// ---- Intel-gated square map (§21 / [D-050]–[D-055]) ----
+export type IntelTier = "OWN" | "LOW" | "MEDIUM" | "HIGH" | "FULL";
+
+/** GET /api/games/:id/map — one marker per tile (row-major, 96). Public map data
+ *  + the server-computed intel tier only; never building lists/counts/outputs. */
+export interface MapTileMarker {
+  coord: { col: number; row: number };
+  terrain: string;
+  owner: number | null;
+  isLandingZone: boolean;
+  hasHQ: boolean;
+  hasOutpost: boolean;
+  intelTier: IntelTier;
+}
+
+export interface MapResponse {
+  gameId: number;
+  turnNumber: number;
+  cols: number;
+  rows: number;
+  viewerSubdivisionId: number | null;
+  tiles: MapTileMarker[];
+}
+
+/** GET /api/games/:id/map/tiles/:col/:row — additive by tier; gated fields are
+ *  present only at/above their tier (render on field presence, never assume shape). */
+export interface TileView {
+  coord: { col: number; row: number };
+  terrain: string;
+  owner: number | null;
+  isLandingZone: boolean;
+  hasHQ: boolean;
+  hasOutpost: boolean;
+  intelTier: IntelTier;
+  // MEDIUM+
+  buildingCount?: number;
+  // HIGH+
+  buildings?: string[];
+  unitCount?: number;
+  // FULL+
+  resourceOutput?: Record<string, number>;
+  units?: { personnel: Record<string, number>; vehicles: Record<string, number> };
+  // OWN only
+  ownBuildings?: {
+    id: number;
+    type: string;
+    tier: string;
+    status: string;
+    modules: { id: number; type: string; status: string }[];
+    garrison: Record<string, number>;
+  }[];
+}
+
+export interface TileResponse {
+  gameId: number;
+  turnNumber: number;
+  viewerSubdivisionId: number | null;
+  tile: TileView;
+}
+
 export interface PublicSubdivision {
   subdivisionId: number;
   name: string;
