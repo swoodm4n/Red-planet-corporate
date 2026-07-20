@@ -4,6 +4,7 @@
  * atomically and recorded. Produces the validated plan phases operate on.
  */
 
+import { pickBuildingActionAttention, pickUnitActionAttention } from "./attention.js";
 import { BUILDINGS, HULLS, MODULE_ALLOWED_ON, VEHICLE_MODULES } from "./constants.js";
 import type { TurnContext, ValidatedSubmission } from "./context.js";
 import { appealAvailable, universalBonusActive } from "./earthRelations.js";
@@ -97,12 +98,42 @@ export function validateActionsPhase(ctx: TurnContext, submissions: Submission[]
     const submission = submissions.find((s) => s.subdivisionId === sub.id);
     if (!submission) continue; // late submission: no new actions
 
-    validated.buildingActions = submission.buildingActions.filter((a) =>
-      validateBuildingAction(ctx, sub, a),
-    );
-    validated.unitActions = submission.unitActions.filter((a) =>
-      validateUnitAction(ctx, sub, a),
-    );
+    // §22.4: reserve attention in submission-declaration order via a per-subdivision
+    // `claimed` set so a later order cannot reuse a unit an earlier accepted order
+    // already spent (closes the duplicate-unit bug, [D-057]). Building- and
+    // unit-action candidate pools are disjoint (GARRISONED vs AVAILABLE/CREWING), so
+    // sharing one `claimed` set is safe and turn-global ([D-059]).
+    const claimed = new Set<number>();
+
+    const acceptedBuilding: BuildingActionOrder[] = [];
+    for (const a of submission.buildingActions) {
+      if (!validateBuildingAction(ctx, sub, a)) continue;
+      const b = findBuilding(sub, a.buildingId);
+      if (!b) continue; // already rejected inside validateBuildingAction
+      const picks = pickBuildingActionAttention(sub, b, a.action, ctx.turnNumber, claimed);
+      if (picks == null) {
+        reject(ctx, sub.id, "BUILDING", `insufficient unspent attention`, a);
+        continue;
+      }
+      for (const id of picks) claimed.add(id);
+      ctx.attentionPicks.set(a, picks);
+      acceptedBuilding.push(a);
+    }
+    validated.buildingActions = acceptedBuilding;
+
+    const acceptedUnit: UnitActionOrder[] = [];
+    for (const a of submission.unitActions) {
+      if (!validateUnitAction(ctx, sub, a)) continue;
+      const picks = pickUnitActionAttention(sub, a, ctx.turnNumber, claimed);
+      if (picks == null) {
+        reject(ctx, sub.id, "UNIT", `insufficient unspent attention`, a);
+        continue;
+      }
+      for (const id of picks) claimed.add(id);
+      ctx.attentionPicks.set(a, picks);
+      acceptedUnit.push(a);
+    }
+    validated.unitActions = acceptedUnit;
     if (submission.politicalAction) {
       if (validatePoliticalAction(ctx, sub, submission.politicalAction)) {
         validated.politicalAction = submission.politicalAction;

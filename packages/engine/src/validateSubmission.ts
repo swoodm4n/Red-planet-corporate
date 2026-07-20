@@ -31,6 +31,7 @@ export function validateSubmission(state: Game, submission: Submission): Invalid
     invalidOrders: [],
     turnStartResources: new Map(),
     plan: [],
+    attentionPicks: new Map(),
     scratch: {
       hubSalesThisTurn: new Map(),
       amplifyActive: new Set(),

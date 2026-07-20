@@ -100,6 +100,7 @@ export function makeGame(setup: GameSetup): Game {
         type,
         status: "AVAILABLE",
         unavailableUntilTurn: 0,
+        attentionSpentThisTurn: false,
       });
     }
 

@@ -94,6 +94,14 @@ export function runPhase8(ctx: TurnContext): {
   // 5b. Tick durational effects (before the turn increments). [D-042]
   tickEffects(ctx.game);
 
+  // 5c. Reset per-unit attention for EVERY unit of EVERY subdivision, regardless of
+  // status (CAPTURED/LOST are simply never read). End-of-turn placement keeps Phase
+  // 1/2 of turn N+1 reading an already-clean board. §22.1 / [D-056].
+  for (const sub of ctx.game.subdivisions) {
+    for (const p of sub.personnel) p.attentionSpentThisTurn = false;
+    for (const p of sub.capturedUnits) p.attentionSpentThisTurn = false;
+  }
+
   // 6. Increment turn.
   ctx.game.turnNumber += 1;
 

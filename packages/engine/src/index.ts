@@ -175,5 +175,16 @@ export {
   storageCap,
 } from "./helpers.js";
 
+// §22 Unit Attention & building available-action derivation. [D-056]–[D-063]
+export {
+  availableActions,
+  selectAttentionUnits,
+  buildingActionGarrisonGroups,
+  base,
+  garrisonUnlocked,
+  moduleUnlocked,
+} from "./attention.js";
+export type { AttentionGroup } from "./attention.js";
+
 // Cloning (deterministic deep copy incl. bigint/Set).
 export { cloneGame, deepClone } from "./clone.js";

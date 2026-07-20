@@ -12,6 +12,7 @@ import {
   TRANSIT_HUB_EXPANSION_SELL_BONUS,
   VEHICLE_MODULES,
 } from "../constants.js";
+import { spendAttention } from "../attention.js";
 import type { TurnContext } from "../context.js";
 import { colonistEta, requisitionCostMultiplier } from "../earthRelations.js";
 import {
@@ -29,6 +30,16 @@ import type { BuildingActionOrder } from "../orders.js";
 export function runPhase4(ctx: TurnContext): void {
   // Non-RNG building actions, iterated by ascending subdivision id then declaration.
   const sorted = [...ctx.plan].sort((a, b) => a.subdivisionId - b.subdivisionId);
+
+  // §22.4: spend the attention reserved in Phase 2 for every accepted building
+  // action (Phase 2's `claimed` set already prevented double-reservation). [D-056]
+  for (const vs of sorted) {
+    const sub = getSub(ctx, vs.subdivisionId);
+    if (!sub) continue;
+    for (const order of vs.buildingActions) {
+      spendAttention(sub, ctx.attentionPicks.get(order) ?? []);
+    }
+  }
 
   // First: all Emergency Extraction damage rolls in canonical order (§15 step 1).
   runEmergencyExtractions(ctx, sorted);
@@ -226,7 +237,7 @@ function colonistRequisition(ctx: TurnContext, sub: Subdivision, b: Building, or
     const id = ctx.game.nextIds.personnel++;
     sub.personnel.push({
       id, type, status: "AVAILABLE", unavailableUntilTurn: 0,
-      arrivalTurn: arriveTurn, requisitionType: type,
+      arrivalTurn: arriveTurn, requisitionType: type, attentionSpentThisTurn: false,
     });
     // Not yet available: mark unavailable until arrival by using arrivalTurn.
     const p = sub.personnel[sub.personnel.length - 1]!;

@@ -12,6 +12,7 @@
  *   declaration index).
  */
 
+import { spendAttention } from "../attention.js";
 import { BUILDINGS, MODULES, TIER_UPGRADE_COST } from "../constants.js";
 import type { TurnContext } from "../context.js";
 import { resolveConflict } from "../conflict.js";
@@ -33,6 +34,16 @@ import type { Building, Personnel, ResourceBundle, Subdivision, Vehicle } from "
 
 export function runPhase5(ctx: TurnContext): void {
   const sorted = [...ctx.plan].sort((a, b) => a.subdivisionId - b.subdivisionId);
+
+  // §22.4: spend the attention reserved in Phase 2 for every accepted unit action
+  // (actor for personnel actions; whole crew for vehicle actions, [D-060]). [D-056]
+  for (const vs of sorted) {
+    const sub = getSub(ctx, vs.subdivisionId);
+    if (!sub) continue;
+    for (const order of vs.unitActions) {
+      spendAttention(sub, ctx.attentionPicks.get(order) ?? []);
+    }
+  }
 
   // --- Sub-step 1: non-conflict actions (simultaneous, greedy) ---
   const outpostPlacements: { sub: Subdivision; order: UnitActionOrder }[] = [];

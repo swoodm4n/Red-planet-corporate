@@ -41,6 +41,7 @@ function ctxWith(game: Game, seq: number[], turn = 1): TurnContext {
     invalidOrders: [],
     turnStartResources: new Map(),
     plan: [],
+    attentionPicks: new Map(),
     scratch: {
       hubSalesThisTurn: new Map(),
       amplifyActive: new Set(),

@@ -154,6 +154,13 @@ export interface Personnel {
   unavailableUntilTurn: number; // Personnel Dispute event
   arrivalTurn?: number; // if in transit from requisition
   requisitionType?: PersonnelType;
+  /**
+   * §22 / [D-056]: true once this unit has backed an attention-gated action this
+   * turn. Reset to false for every unit in Phase 8 (after tickEffects, before the
+   * turn increments). Optional for backward-compatibility with existing personnel
+   * constructors; an absent value is treated as `false` (unspent) everywhere. [D-062]
+   */
+  attentionSpentThisTurn?: boolean;
 }
 
 export interface VehicleModule {
