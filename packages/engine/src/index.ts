@@ -175,11 +175,16 @@ export {
   storageCap,
 } from "./helpers.js";
 
-// §22 Unit Attention & building available-action derivation. [D-056]–[D-063]
+// §22 Unit Attention & building available-action derivation. [D-056]–[D-064]
 export {
   availableActions,
+  buildingActionOffered,
   selectAttentionUnits,
+  selectActorAttention,
   buildingActionGarrisonGroups,
+  pickBuildingActionAttention,
+  pickUnitActionAttention,
+  spendAttention,
   base,
   garrisonUnlocked,
   moduleUnlocked,
