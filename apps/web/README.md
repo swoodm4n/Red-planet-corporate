@@ -89,6 +89,7 @@ status (400/401/403/404/409/500). Auth via the `rpc_session` cookie (set by logi
 | GET | `/api/games/:gameId/orders` | **owner** | current turn's stored submission |
 | PUT | `/api/games/:gameId/orders` | **owner** | submit/revise; body = `{garrison[],buildingActions[],unitActions[],politicalAction?,corporateActions[],notes[]}`; returns `{saved,accepted,invalidOrders[]}` (subdivisionId/turn set server-side) |
 | POST | `/api/games/:gameId/orders/validate` | **owner** | dry-run engine validation, no save → `{valid,invalidOrders[]}` |
+| POST | `/api/games/:gameId/orders/available-actions` | **owner** | per-building currently-valid action list + per-unit attention state, reflecting the caller's draft orders — see §22 contract below |
 | GET | `/api/games/:gameId/turns` | approved | index of resolved turns (+event) |
 | GET | `/api/games/:gameId/turns/:turnNumber` | approved | player: event+scoreboard; admin: full log |
 | GET | `/api/games/:gameId/announcements` | approved | colony announcements |
@@ -168,6 +169,74 @@ Notes for the frontend:
   gated fields (there is no private content to reveal).
 - Tier is recomputed live every request from current espionage/opsec; a tile's shape
   can therefore change turn-to-turn. Never cache a shape across turns.
+
+#### Building available-actions contract (§22 / [D-056]–[D-064])
+
+The orders composer must never guess whether an action is valid client-side — the
+engine's `availableActions(building, sub, game)` ([D-061]) is the single source of
+truth. This endpoint runs it per building **and** applies the tentative attention
+spend of the orders the player has queued but not yet submitted, so the offered set
+and the ASSIGNED/AVAILABLE unit badges update live as they compose.
+
+**Who the viewer is:** always the caller's own assigned subdivision, resolved
+server-side from the session (`requireOwnedSubdivision`). There is no way to pass a
+target subdivision; a player can only ever query their own buildings. (Admins have
+no assigned slot, so this player-composer endpoint is not for them — they use the
+admin report/state routes.)
+
+`POST /api/games/:gameId/orders/available-actions`
+
+Request body (all fields optional; omit `draftOrders` for the fresh, nothing-queued
+state):
+```jsonc
+{
+  "draftOrders": {
+    "buildingActions": [ /* BuildingActionOrder[] — engine shape */ ],
+    "unitActions":     [ /* UnitActionOrder[] — engine shape */ ]
+    // garrison / politicalAction / corporateActions are accepted but ignored here:
+    // they spend no unit attention ([D-058]/[D-059]).
+  }
+}
+```
+
+Response `200`:
+```jsonc
+{
+  "gameId": 1,
+  "turnNumber": 3,
+  "subdivisionId": 2,               // server-derived; the caller's own subdivision
+  "buildings": {                    // buildingId -> currently-valid BuildingActionType[]
+    "950101": ["AMPLIFY_CREDIT_YIELD"],
+    "950102": ["COLONIST_REQUISITION", "TERRITORIAL_CLAIM", "LOCKDOWN"],
+    "950103": []                    // e.g. not operational (garrison below labor min)
+  },
+  "unitAttention": {                // personnelId -> attention spent by the draft so far
+    "950201": true,                 // true  => attention spent (badge: ASSIGNED)
+    "950203": false                 // false => attention unspent (badge: AVAILABLE)
+  }
+}
+```
+
+Semantics the frontend can rely on:
+- `buildings[id]` is the engine's live offered set: base actions ∪ garrison-unlocked
+  ∪ module-unlocked, filtered by operational status, built-this-turn gating ([D-022]),
+  surplus/module set requirements, and **attention availability**. It intentionally
+  does **not** validate per-order params (quantities, targets, hulls) or variable
+  costs (Market Sale / Colonist Requisition / Produce Vehicle / Lockdown) — those
+  remain the job of `POST …/orders/validate` and turn resolution ([D-063]).
+- The set is **live under the draft**: draft `buildingActions`/`unitActions` are
+  walked in declaration order (building actions before unit actions, matching Phase
+  2's `claimed` reservation, §22.4) and tentatively mark the units they'd commit as
+  attention-spent via the engine's canonical lowest-id selection ([D-057]). So once a
+  draft order commits a required unit, any action needing that same unit **drops off**
+  the building's list — exactly what will happen at resolution. A queued action that
+  is not actually offered (non-operational building, etc.) spends nothing.
+- `unitAttention[personnelId]` is the authoritative value for the ASSIGNED/AVAILABLE
+  badge (`true` = spent = ASSIGNED, `false`/absent = unspent = AVAILABLE). Every unit
+  in the caller's subdivision is keyed. This is the server value the badge should read
+  instead of any client-side derivation.
+- Attention state is turn-scoped and derived from turn-start snapshot + draft only;
+  the request never mutates persisted state (the game is cloned per call).
 
 ### Admin (`role === ADMIN`)
 | Method | Path | Notes |

@@ -1035,11 +1035,36 @@ validation-reason tests green; scoping `availableActions` to structural + attent
 gates (not order params) matches what a per-building UI can meaningfully answer while
 still sharing the one attention predicate with the validator ([D-061]).
 
+### D-064 — Draft-aware building available-actions endpoint reuses the engine's attention predicate
+*Source: frontend needs a server-computed per-building action list while a player
+composes orders (§22.9); the composer must not guess validity client-side.*
+**Ruling:** The web layer exposes `POST /api/games/:gameId/orders/available-actions`
+(`{draftOrders?}` → `{gameId,turnNumber,subdivisionId,buildings,unitAttention}`),
+viewer-scoped to the caller's own subdivision via `requireOwnedSubdivision` exactly
+like `…/orders/validate`. It **clones** turn-start state, walks the draft's
+`buildingActions` then `unitActions` in declaration order (mirroring Phase 2's
+`claimed` reservation, §22.4), tentatively marks the units each **offered** order
+would commit as attention-spent using the engine's own
+`buildingActionOffered`/`pickBuildingActionAttention`/`pickUnitActionAttention` +
+`spendAttention`, then calls `availableActions(building, sub, game)` per building and
+reports each unit's `attentionSpentThisTurn`. No selection/gating logic is
+reimplemented in the server. To enable this without duplication, the engine's
+`index.ts` now additionally exports the already-existing
+`buildingActionOffered`, `selectActorAttention`, `pickBuildingActionAttention`,
+`pickUnitActionAttention`, and `spendAttention` (previously internal to
+`attention.ts`); no engine behaviour changed. `garrison`/political/corporate draft
+entries are accepted but ignored (attention-neutral, [D-058]/[D-059]).
+**Reasoning:** Reusing the validator's exact predicate on a clone guarantees the
+offered list and the eventual accept/reject can never disagree ([D-061]) while
+keeping persisted state untouched; exporting the existing helpers is a pure
+API-surface widening (no logic moved or copied), the minimal change that lets the
+backend show the live "spent → drops off" behaviour the composer needs.
+
 ---
 
 ## Decision categories at a glance
 
-The 63 decisions group into ten categories A–J, numbered sequentially with no
+The 64 decisions group into ten categories A–J, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
 ambiguity; H by the **backend** agent for server-only concerns; I by the
@@ -1048,7 +1073,8 @@ square-map extension (D-050–D-054), with D-055 added by the **game-engine** ag
 for tile-view edge cases surfaced while implementing §21.6; J by the
 **spec-analyst** for the player-requested unit-attention action-economy extension
 (D-056–D-061), with D-062–D-063 added by the **game-engine** agent for
-implementation-level rulings surfaced while building §22. All are binding on
+implementation-level rulings surfaced while building §22, and D-064 by the
+**backend** agent for the draft-aware available-actions endpoint. All are binding on
 downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
@@ -1062,7 +1088,7 @@ downstream code.
 | **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
 | **I** | Intel Visibility & Square Map | D-050 – D-055 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054); tile-view edge cases — unclaimed/off-map/RETIRED, output keying, map-level split (D-055) |
-| **J** | Unit Attention & Action Availability | D-056 – D-063 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063) |
+| **J** | Unit Attention & Action Availability | D-056 – D-064 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063); draft-aware available-actions endpoint reusing the engine predicate + widened attention exports (D-064) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -1074,5 +1100,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-063). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-064). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
