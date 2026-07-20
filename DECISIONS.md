@@ -720,13 +720,132 @@ any game data or per-key label tables.
 
 ---
 
+## I. Intelligence-Gated Visibility & Square Map (spec-analyst extension)
+
+Player-requested new mechanic (post-rulebook): a square-grid map with per-opponent,
+intelligence-gated tile visibility. Specified in GAME_SPEC §21. These extend the
+same binding contract; they **supersede/refine** the cited map/visibility clauses of
+categories D and F.
+
+### D-050 — Square grid (12×8) with 8-directional Chebyshev adjacency replaces odd-q hexes
+*Source: user request to change the map from hexagons to a grid of squares;
+supersedes the geometry of [D-026] and the adjacency of [D-027]. GAME_SPEC §21.1–2.*
+**Ruling:** The map becomes a **12×8 = 96-tile square grid** (same tile count and
+`col 1..12 / row 1..8` bounds as the old hex map, to avoid disrupting map-size
+assumptions elsewhere). The `HexCoord {col,row}` / `Hex` types and `rowMajorIndex`
+are **retained by name** (read as "tile") to minimise churn. Adjacency is
+**8-directional (Moore neighbourhood)**: `neighbors` = the up-to-8 cells with
+`Δcol,Δrow ∈ {-1,0,1}` minus self, filtered in-bounds; distance is **Chebyshev**
+`max(|Δcol|,|Δrow|)`, replacing the cube `hexDistance`. All §9 *rules* (free-adjacency
+movement, Transit-Hub node-jumps, difficult-terrain full-move consumption, Impassable
+blocking, vehicle ranges 2/4, Patrol/Enforce/Vehicle-Attack range ≤1, Fortification
+"tile + adjacent" spotting) are unchanged — they simply read the new neighbor set and
+metric. **Terrain is a straight reskin:** the `Terrain` enum and every §9.1 terrain
+effect are unchanged; each tile keeps its terrain.
+**Reasoning:** 8-dir Chebyshev is the square analogue that preserves omnidirectional
+(diagonal) connectivity closest to hex's 6-neighbour feel and is already the metric
+named for vehicle range in [D-027]; 4-dir (von Neumann) would remove diagonal
+movement and shrink range-2 reach to a 12-tile diamond, a larger balance change than
+Chebyshev's modest widening (distance-1: 8 vs old 6; distance-2: 24 vs old 18).
+Keeping tile count, bounds, coordinate type, and terrain identical makes this a
+reskin, not a redesign. The reach delta is logged for QA (spotting frequency,
+vehicle range); `INTEL_TIER_*` and existing ranges remain the balance levers.
+
+### D-051 — Espionage/opsec formula, starting values, live recomputation, and tier thresholds
+*Source: user request for `intelScore = espionage/(espionage+opsec)` with named tier
+constants and a hard "equal start ⇒ Low" invariant; grounding left to spec-analyst.
+GAME_SPEC §21.3–4.*
+**Ruling:** Espionage and opsec are **recomputed live every turn from current state**
+(no stored accumulators — simpler, always consistent, no drift; matches the engine's
+pure-function style). Grounded in the entities the §14.2 conflict math already uses:
+`espionage = 1 (base) + 1·#Analysts + 1·#active SensorArray + 1·#active CommsArray
+buildings + 1·#active CommandSuite-on-CommsArray`; `opsec = 1 (base) + 1·#Contractors
++ 1·#active SecurityDetail + 1·#active Fortification`. Personnel counted are active
+roster (`status ∉ {CAPTURED, LOST, UNHOUSED}`); modules/buildings counted are
+`ACTIVE`. Tier thresholds are named constants `INTEL_TIER_LOW_MAX = 0.60`,
+`INTEL_TIER_MEDIUM_MAX = 0.75`, `INTEL_TIER_HIGH_MAX = 0.90`, evaluated by **exact
+integer cross-multiplication** (`2e<3o`→LOW, `e<3o`→MEDIUM, `e<9o`→HIGH, else FULL)
+so no floats are introduced ([D-002]/[D-016]).
+**Start-invariant verification:** default roster gives every viewer `espionage = 1`
+and every target `opsec = 1 + 1 (starting Contractor) = 2` → `intelScore = 0.333 →
+LOW`, with `espionage (1) ≤ opsec (2)`. Worst symmetric parent case (Genesis's free
+Comms Array) is `2/2 = 0.5 → LOW`, `espionage = opsec` (not exceeding). Hence every
+player starts LOW against everyone and *equal espionage/opsec ⇒ 0.5 ⇒ LOW*. A
+deliberate 2-Analyst *choice*-personnel opening can reach `3/2 = 0.6 → MEDIUM` vs a
+bare target (intended, reveals only a building count); the documented rebalance lever
+is raising `INTEL_TIER_LOW_MAX`, exactly the fallback the directive offered.
+**Reasoning:** Reusing Analyst/Contractor headcount and the existing intel/defensive
+modules keeps the new stats coupled to real investments the player already makes
+(and that already feed Sabotage/defense), rather than inventing parallel counters. A
+symmetric base of 1 avoids 0/0, keeps higher tiers reachable, and guarantees the
+default start sits safely at 0.333 (below 0.60) while honouring the equal-values-⇒-0.5
+property that the ratio formula gives for free.
+
+### D-052 — Intel level is derived per (viewer,target) pair on demand, never stored, global per opponent
+*Source: user requirement that intel is per-opponent (one level for all their tiles);
+storage left open. GAME_SPEC §21.5.*
+**Ruling:** `intelTier(viewerId, targetId)` is a **pure derived function of current
+state**, computed on demand (Phase 8 report generation or any live query) and **never
+stored** on `Subdivision`/`Game` or persisted. The single computed tier applies to
+**all** of the target's tiles (global per opponent, not per tile). Self is always
+"OWN" (full detail); a RETIRED target has no tiles and yields no view.
+**Reasoning:** Deriving on demand is the simplest model, cannot drift, adds no new
+serialized fields, and matches the snapshot-authoritative persistence rule ([D-045])
+where the engine `Game` is the single source of truth and projections are rebuilt,
+not written through.
+
+### D-053 — Gated tile-view data shape per tier
+*Source: user gave the four tiers' reveal levels; exact field membership left to
+spec-analyst. GAME_SPEC §21.6, refines §18 [F].*
+**Ruling:** The map level shows **only HQ/Outpost icons** (plus public
+terrain/owner/closed-border status); all other building detail is delivered through a
+gated `TileView`. A "building on the tile" for counting = `status ∈ {ACTIVE, PENDING,
+DISABLED}` (excludes DERELICT ruins). "Units on the tile" = personnel
+`GARRISONED`/`CREWING` physically on the tile + vehicles on the tile. Additive reveal:
+**LOW** = public fields only (nothing private); **MEDIUM** = `+buildingCount` (includes
+disabled/pending and the HQ/Outpost already iconned, excludes DERELICT); **HIGH** =
+`+buildings[]` (BuildingType list, id-ordered, duplicates shown) and aggregate
+`+unitCount`; **FULL** = `+resourceOutput` (per-building passive primary output per
+§7.3/[D-040] — capacity, **not** stockpiles) and `+units` as **type/hull counts
+only**. Individual personnel `id` and vehicle module loadouts are **never** exposed by
+the intel tier (still only via Enhanced Surveillance/Corporate Audit/Patrol per §18).
+Own tiles (`OWN`) are always full detail.
+**Reasoning:** Counting non-DERELICT structures keeps the number truthful without
+leaking removed ruins; capping FULL at type/hull counts (not identities/loadouts)
+preserves the value of the dedicated point-in-time intel actions so the standing
+tier and the active intel toolkit remain complementary rather than redundant.
+Exposing computed output (capacity) but not stockpiles keeps §18's "stockpiles are
+private" intact.
+
+### D-054 — Spotting and intel tiers are separate, non-interacting systems; closed borders stop gating visibility
+*Source: user asked to resolve the overlap between existing spotting/closed-border
+mechanics (§14.4) and the new standing intel tiers. GAME_SPEC §21.7, refines §14.4/§18.*
+**Ruling:** Spotting ([D-028]) and intel tiers ([D-051–053]) are **fully decoupled**:
+neither reads the other, intel tier does **not** modify spotting chance, and spotting
+does **not** modify intel tier. Spotting remains a defender-side, RNG, point-in-time
+**capture** event on a **closed**-border crossing (now 8-dir); intel tier remains a
+viewer-side, deterministic, standing **visibility** level. **Closed borders no longer
+gate tile-content visibility** — that is now solely the intel tier's job; a viewer
+sees a target's tiles at their intel tier regardless of border open/closed status.
+Closed borders keep only their §14.4 role (trigger movement spotting/capture) and
+their public-status role (§18).
+**Reasoning:** Analyst and Contractor already influence each system through its own
+channel (spotting's ±10% terms vs the §21.3 weights); letting them cross-modify would
+double-count the same units. Moving visibility-gating off border status and onto the
+explicit intel tier removes the previously-silent overlap between §18's implicit
+border-hiding and the new mechanic, leaving one authoritative gate for "what can I see"
+and one for "did my intruder get caught."
+
+---
+
 ## Decision categories at a glance
 
-The 49 decisions group into eight categories A–H, numbered sequentially with no
+The 54 decisions group into nine categories A–I, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
-ambiguity; H by the **backend** agent for server-only concerns. All are binding
-on downstream code.
+ambiguity; H by the **backend** agent for server-only concerns; I by the
+**spec-analyst** again for the player-requested intelligence-gated visibility /
+square-map extension. All are binding on downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
 |---|---|---|---|
@@ -738,6 +857,7 @@ on downstream code.
 | **F** | Scoring & Misc | D-034 – D-037 | Oxygen/tech-tree/freeform-research inert + admin-stamped (D-034); scoring counters, normalization off by default (D-035); HQ +1 action (D-036); action-economy limits (D-037) |
 | **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
+| **I** | Intel Visibility & Square Map | D-050 – D-054 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -749,5 +869,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-049). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-054). Append new decisions as later phases surface
 gaps; never renumber existing entries.*

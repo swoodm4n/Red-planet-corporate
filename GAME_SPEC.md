@@ -40,6 +40,7 @@ Design invariants:
 18. Information Visibility
 19. Edge Cases & Failure Semantics
 20. Turn Report
+21. Intelligence-Gated Visibility & Square Map
 
 ---
 
@@ -413,9 +414,18 @@ invents stats.
 
 ## 9. Map & Movement
 
+> **SUPERSEDED (geometry only) by §21 / [D-050].** As of the intelligence-gated
+> visibility revision, the map is a **12×8 square grid** with **8-directional
+> (Chebyshev) adjacency**, not odd-q hexes. All *rules* in §9 (movement is free
+> adjacency, Transit-Hub node-jumps, difficult-terrain full-move consumption,
+> Impassable blocking, vehicle ranges, terrain effects) are unchanged — only the
+> neighbor set and the distance metric change. Read every "hex" below as "tile"
+> and every `neighbors()`/`hexDistance()` as its §21 square-grid replacement.
+> The `HexCoord {col,row}` shape and the `col 1–12 / row 1–8` bounds are retained.
+
 ### 9.1 Grid
-12 columns (A–L = 1–12) × 8 rows (1–8) = 96 hexes. **Offset odd-q, flat-top**
-hexes **[D-026]**. The Landing Zone occupies one fixed hex (host-configured;
+12 columns (A–L = 1–12) × 8 rows (1–8) = 96 tiles (§21 square grid; formerly
+odd-q flat-top hexes **[D-026]**, now **[D-050]**). The Landing Zone occupies one fixed hex (host-configured;
 unclaimable, permanent Transit Hub, always accessible to all).
 
 Terrain effects:
@@ -649,7 +659,16 @@ Sabotage success → target building `disabledUntilTurn = turn+1` (Redundant Sys
 freed next turn. All success/failure feeds cumulative scoring counters (§12).
 
 ### 14.4 Spotting (closed borders) **[D-028]**
-For a unit crossing a rival's closed hex (adjacency movement only; hub jumps exempt):
+> **Relationship to intel tiers (§21 / [D-054]):** Spotting and intelligence-gated
+> visibility are **separate, non-interacting systems**. Spotting is a *defender-side
+> capture event* triggered when the **mover's** unit crosses into a rival's
+> **closed** tile; it is unchanged by §21 except that "adjacency" is now 8-dir
+> (§21.2). Intel tiers are a *viewer-side standing visibility level* (§21.3) and do
+> **not** modify spotting chance, and spotting does **not** modify intel tier.
+> Closed borders no longer gate *tile-content visibility* (that is now the intel
+> tier's job, §21.4); closed borders govern **only** movement spotting/capture.
+
+For a unit crossing a rival's closed tile (adjacency movement only; hub jumps exempt):
 ```
 chance = clamp(20 + 10*(Fortification modules on hex or adjacent to fortified bldg)
                   - 10*(unit is Analyst or Analyst-crewed vehicle), 0, 100)   // percent
@@ -810,9 +829,17 @@ regional target weight.
 
 ## 18. Information Visibility
 
-**Public:** composite score & category rankings, category leaders, building
-existence & type on the map, claimed-hex ownership & closed-border status, public
-statements/broadcasts, denouncements, formal agreements, active motions.
+> **REFINED by §21 / [D-053].** The map level now shows **only HQ and Outpost
+> icons** (plus terrain and claimed-tile ownership/closed-border status). The
+> existence and type of **all other buildings** is no longer public — it is gated
+> per-opponent by the viewer's **intel tier** (§21.4). The "building existence &
+> type on the map" clause below therefore applies **only to HQ/Outpost icons**;
+> everything else is delivered through the §21 gated tile view.
+
+**Public:** composite score & category rankings, category leaders, **HQ/Outpost
+icons** on the map (other buildings gated by intel tier, §21), claimed-tile
+ownership & closed-border status, public statements/broadcasts, denouncements,
+formal agreements, active motions.
 **Private:** exact stockpiles (reveal via Corporate Audit / Market Surveillance /
 trade), garrison assignments (partial reveal via Patrol/Enhanced Surveillance/Field
 Surveillance), Earth Relations (never auto), module loadouts (mostly; Enhanced
@@ -862,5 +889,240 @@ posts composite rank + each subdivision's leading category. Split per §18.
 
 ---
 
-*End of GAME_SPEC.md. Companion: DECISIONS.md (D-001 – D-037). Amend both together
+## 21. Intelligence-Gated Visibility & Square Map
+
+New mechanic (post-rulebook, player-requested). Replaces the hex map with a square
+grid and gates opponent-tile detail behind a per-opponent intelligence tier derived
+from the viewer's espionage vs the target's operational security (opsec). This
+section is authoritative for engine/backend/frontend and **supersedes/refines** the
+cited clauses of §9, §14.4, §18. Decisions **[D-050]–[D-054]**.
+
+### 21.1 Square grid coordinate system (supersedes §9 geometry, [D-026]) **[D-050]**
+
+- **Same tile count and bounds as the old hex map:** 12 columns × 8 rows = **96
+  tiles**. Coordinate type is the existing `HexCoord { col: 1..12, row: 1..8 }`
+  (name retained to avoid churn; read as "tile coord"). `map: Tile[96]`, row-major
+  (the `Hex`/`HexCoord` types and `rowMajorIndex` are unchanged; `Hex.terrain`,
+  `ownerSubdivisionId`, `deposits`, `surveyed` unchanged).
+- **Terrain is a straight reskin, not a redesign.** The `Terrain` enum is
+  unchanged `{ PLAINS, COLONY_EXPANSION, MOUNTAINS, ICE_DEPOSIT, RARE_MINERALS,
+  VOLCANIC_VENT, WATER_RESERVE, LANDING_ZONE, IMPASSABLE }`. Every tile keeps its
+  terrain and all §9.1 terrain effects (move cost, resource bonuses, build
+  surcharge, Impassable blocking) verbatim. `terrainMoveCost`,
+  `terrainBuildMineralSurcharge`, `makeDefaultMap` are unchanged.
+- **The Landing Zone** remains one fixed, unclaimable tile that is a permanent
+  Transit Hub node accessible to all (§9.1/§9.4), unchanged.
+
+### 21.2 Adjacency & distance (8-directional / Chebyshev) **[D-050]**
+
+Replaces the odd-q 6-neighbor `neighbors()` and cube `hexDistance()`:
+
+```
+neighbors(col,row) = { (col+dc, row+dr) : dc∈{-1,0,1}, dr∈{-1,0,1}, (dc,dr)≠(0,0) }
+                     filtered to inBounds (1..12 × 1..8).           // 8-neighbour Moore set
+gridDistance(a,b)  = max(|a.col−b.col|, |a.row−b.row|)              // Chebyshev
+isAdjacent(a,b)    = gridDistance(a,b) == 1                          // ⇔ b ∈ neighbors(a)
+```
+
+- **Adjacency is 8-directional (Moore neighbourhood).** Every §9/§10/§14 use of
+  "adjacent hex" or `hexDistance ≤ 1` (movement to adjacent tile, Vehicle Attack
+  range ≤1, Patrol/Enforce Territory range ≤1, Power Conduit relay to adjacent,
+  Fortification "hex + adjacent" spotting bonus) now uses the 8-neighbour set.
+- **Range** (`hexDistance` in code → `gridDistance`) uses Chebyshev distance:
+  Drivetrain range 2, Long-Range Propulsion range 4, Comms/Sensor intel ranges,
+  Survey radius, etc. all read the same numbers against the Chebyshev metric.
+- **Impassable/difficult terrain** rules are unchanged: `neighbors()` excludes
+  out-of-bounds; movement/range still refuse IMPASSABLE and treat
+  Mountains/Rare-Minerals entry as consuming the full move (§9.3, [D-027] retained).
+- **Reach delta vs old hex (documented, accepted [D-050]):** tiles within
+  distance 1 = **8** (was 6); within distance 2 = 24 (was 18). This modestly widens
+  adjacency-based reach; it is the closest square analogue that keeps omnidirectional
+  (diagonal) connectivity, matching the "Chebyshev/hex distance" already named for
+  vehicle range in [D-027]. QA should watch spotting frequency and vehicle-range
+  balance; the map is otherwise byte-for-byte the same size.
+
+### 21.3 Espionage, opsec & intel score (live-recomputed, [D-051])
+
+Both quantities are **recomputed live each turn from current state** (no stored
+accumulators, no drift). They are small non-negative integers. "count personnel of
+type T" = personnel in `sub.personnel` whose `status ∉ {CAPTURED, LOST, UNHOUSED}`
+(i.e. active roster that can actually staff intel/security roles). "active module"
+= `status == ACTIVE` (same predicate as the existing defense-investment code,
+§14.2). "active building" = `status == ACTIVE`.
+
+```
+# --- named, rebalanceable constants ---
+INTEL_ESPIONAGE_BASE      = 1
+INTEL_OPSEC_BASE          = 1
+INTEL_W_ANALYST           = 1    # Analyst = intelligence-coded personnel (§6)
+INTEL_W_SENSOR_ARRAY      = 1    # active SENSOR_ARRAY modules (intel module, §7.2)
+INTEL_W_COMMS_ARRAY       = 1    # active COMMUNICATIONS_ARRAY buildings (already aids Sabotage, §14.2)
+INTEL_W_COMMAND_SUITE     = 1    # active COMMAND_SUITE modules on a COMMUNICATIONS_ARRAY (Analyst amplifier, §7.2)
+INTEL_W_CONTRACTOR        = 1    # Contractor = security-coded personnel (§6)
+INTEL_W_SECURITY_DETAIL   = 1    # active SECURITY_DETAIL modules (defense, §14.2)
+INTEL_W_FORTIFICATION     = 1    # active FORTIFICATION modules (defense, §14.2)
+
+function espionage(sub):
+  e  = INTEL_ESPIONAGE_BASE
+  e += INTEL_W_ANALYST        * countPersonnel(sub, ANALYST)
+  e += INTEL_W_SENSOR_ARRAY   * countActiveModules(sub, SENSOR_ARRAY)
+  e += INTEL_W_COMMS_ARRAY    * countActiveBuildings(sub, COMMUNICATIONS_ARRAY)
+  e += INTEL_W_COMMAND_SUITE  * countActiveCommandSuitesOnCommsArrays(sub)
+  return e
+
+function opsec(sub):
+  o  = INTEL_OPSEC_BASE
+  o += INTEL_W_CONTRACTOR      * countPersonnel(sub, CONTRACTOR)
+  o += INTEL_W_SECURITY_DETAIL * countActiveModules(sub, SECURITY_DETAIL)
+  o += INTEL_W_FORTIFICATION   * countActiveModules(sub, FORTIFICATION)
+  return o
+
+function intelScore(viewer, target):          # a rational in (0,1); denom ≥ 2 always
+  return espionage(viewer) / (espionage(viewer) + opsec(target))
+```
+
+Rationale for grounding: Analyst is the only intelligence-coded unit and already
+"operates Sensor Arrays & Comms Array" (§6); Sensor Array / Comms Array / Command
+Suite are the intel modules; Contractor is the only security-coded unit and
+Fortification / Security Detail are the only defensive modules — these are exactly
+the weights the existing §14.2 Sabotage-vs-defense math already uses, so espionage
+and opsec reuse the same signals rather than inventing disconnected stats.
+
+### 21.4 Intel tiers (named thresholds, integer-exact, [D-051])
+
+```
+INTEL_TIER_LOW_MAX    = 0.60    # score <  0.60            -> LOW
+INTEL_TIER_MEDIUM_MAX = 0.75    # 0.60 <= score < 0.75     -> MEDIUM
+INTEL_TIER_HIGH_MAX   = 0.90    # 0.75 <= score < 0.90     -> HIGH
+                                # score >= 0.90            -> FULL
+
+function intelTier(viewer, target):
+  e = espionage(viewer); o = opsec(target)
+  # Determinism forbids floats ([D-002]/[D-016]); evaluate the thresholds as exact
+  # integer cross-multiplications (0.60=3/5, 0.75=3/4, 0.90=9/10):
+  if 2*e <  3*o:  return LOW       # e/(e+o) <  0.60
+  if 1*e <  3*o:  return MEDIUM    # e/(e+o) <  0.75  (and >= 0.60)
+  if 1*e <  9*o:  return HIGH      # e/(e+o) <  0.90  (and >= 0.75)
+  return FULL                      # e/(e+o) >= 0.90
+```
+
+The four `INTEL_TIER_*_MAX` and nine `INTEL_*` constants above are the only
+rebalance knobs; changing a threshold or weight changes nothing else.
+
+**Critical start invariant (verified [D-051]).** With the default starting roster
+(Engineer×5, Admin×2, Contractor×1, +2 non-Analyst choice, no intel/security
+modules, §4): every viewer has `espionage = 1` and every target has
+`opsec = 1 (base) + 1 (starting Contractor) = 2`, so `intelScore = 1/3 = 0.333 →
+LOW`, and `espionage (1) ≤ opsec (2)` holds. The only parent that raises starting
+espionage is Genesis Tech (free Comms Array → `espionage = 2`); worst symmetric case
+`espionage 2 / opsec 2 = 0.5 → LOW`, with `espionage = opsec` (not exceeding). Thus
+**every player starts at LOW against everyone**, and *equal espionage and opsec ⇒
+score 0.5 ⇒ LOW* (0.5 < `INTEL_TIER_LOW_MAX`). A player who *chooses* 2 Analysts as
+starting choice-personnel (a deliberate intel investment, sacrificing labor) can
+reach `espionage 3 / opsec 2 = 0.6 → MEDIUM` against a bare target turn 1; this is
+intended (Medium reveals only a building count). If playtesting deems it too strong,
+the single lever is `INTEL_TIER_LOW_MAX` (raise toward 0.67), per the design
+directive — no other constant need change.
+
+### 21.5 Intel-level data model (derived on demand, not stored, [D-052])
+
+- Intelligence is tracked **per (viewerSubdivisionId, targetSubdivisionId)** pair
+  and is **global per opponent**: the single `intelTier(viewer, target)` applies to
+  **all** of the target's tiles (not per tile).
+- It is a **pure derived function of current state**, computed on demand (during
+  Phase 8 report generation, or on any live map/tile query). It is **never stored**
+  in `Game` state and never persisted — matching the engine's deterministic,
+  pure-function style ([D-045] snapshot-authoritative). No new fields on
+  `Subdivision`/`Game`.
+- `intelTier(v, v)` (self) is not computed; a subdivision always sees its own tiles
+  in full (§21.6). Retired/inactive targets: a `RETIRED` subdivision has no tiles
+  (buildings derelict, hexes unclaimed per [D-032]), so no view is produced.
+
+### 21.6 Gated tile view — exact shape per tier ([D-053])
+
+Clicking a tile opens a `TileView`. Only **HQ and Outpost icons** render at the map
+level (§18 refined); all other detail comes from the tile view, gated as follows.
+For counting, a "building on the tile" = a building whose `hex == tile` and whose
+`status ∈ {ACTIVE, PENDING, DISABLED}` — i.e. real standing structures, **excluding
+DERELICT** ruins ([D-032]). "units on the tile" = personnel with
+`status ∈ {GARRISONED, CREWING}` physically located on the tile (garrisoned in a
+tile building, or crewing a vehicle whose `hex == tile`) **plus** vehicles with
+`hex == tile`; AVAILABLE/UNHOUSED personnel have no tile and are never shown here.
+
+**Always-present (public) fields, every tier incl. LOW and non-owned tiles:**
+```
+TileView {
+  coord:        HexCoord
+  terrain:      Terrain              # public (visible on the map)
+  owner:        subdivisionId | null # public claim (§18)
+  isLandingZone: bool
+  hasHQ:        bool                 # public HQ icon   (owner tiles & opponent tiles)
+  hasOutpost:   bool                 # public Outpost icon
+  intelTier:    "OWN" | LOW | MEDIUM | HIGH | FULL   # viewer's tier vs owner ("OWN" if self)
+  ...gated fields below...
+}
+```
+
+**Own tiles (`intelTier = OWN`, requirement 2):** always full detail — the complete
+building list with per-building modules/status/garrison, all units, all outputs,
+and stockpile-independent info. (Stockpiles remain subdivision-level and private per
+§18; the tile view exposes per-building output, not the Credits/resource pool.)
+
+**Opponent tiles — additive reveal by tier:**
+
+| Field | LOW | MEDIUM | HIGH | FULL |
+|---|---|---|---|---|
+| `terrain`, `owner`, `hasHQ`, `hasOutpost` (public) | ✓ | ✓ | ✓ | ✓ |
+| `buildingCount` — # non-DERELICT buildings on tile | — | ✓ | ✓ | ✓ |
+| `buildings[]` — `BuildingType` of each non-DERELICT building (canonical order by building id; duplicates listed) | — | — | ✓ | ✓ |
+| `unitCount` — (# personnel garrisoned/crewing on tile) + (# vehicles on tile) | — | — | ✓ | ✓ |
+| `resourceOutput` — per-resource sum of each tile building's **passive per-turn primary output** (base + persistent module bonuses, the Phase-3 value of §7.3/[D-040]); keyed by ResourceType | — | — | — | ✓ |
+| `units` — breakdown by `{ PersonnelType: count }` for personnel on tile **and** `{ HullClass: count }` for vehicles on tile | — | — | — | ✓ |
+
+Reveal rules and exclusions (all [D-053]):
+- **LOW reveals nothing beyond the public map fields** — no counts, no lists. (The
+  viewer still sees the tile exists, its terrain, its owner, and any HQ/Outpost icon,
+  because those are public under §18; LOW simply adds no private detail.)
+- **MEDIUM** adds `buildingCount` only. The count **includes** garrison-less /
+  disabled / pending (non-DERELICT) buildings and **includes** any HQ/Outpost already
+  shown as icons (so the number is truthful), and **excludes** DERELICT ruins.
+- **HIGH** adds the `buildings[]` type list and the aggregate `unitCount`. It does
+  **not** reveal per-building output, module loadouts, or which unit types.
+- **FULL** additionally reveals `resourceOutput` (productive capacity, the computed
+  passive output — **not** stockpiles, which stay private) and `units` as
+  **type/hull counts only**. Individual personnel identity (unit `id`) and vehicle
+  module loadouts are **never** exposed by the intel tier; those remain obtainable
+  only through the existing point-in-time intel actions (Enhanced Surveillance,
+  Corporate Audit, Patrol/Field Surveillance) per §10/§18.
+
+### 21.7 Relationship to spotting & closed borders (overlap resolved, [D-054])
+
+Two systems, **fully decoupled**:
+
+| | Spotting (§14.4/[D-028]) | Intel tier (§21, [D-051–053]) |
+|---|---|---|
+| Nature | Point-in-time **capture event** | Standing **visibility level** |
+| Trigger | Mover crosses a **closed** rival tile (8-dir move) | Any time viewer inspects a tile |
+| Direction | Defender detects the **mover's** unit | Viewer sees the **target's** tiles |
+| Granularity | Per crossing unit/vehicle | Global per opponent (all their tiles) |
+| Inputs | Base 20% + Fortification − Analyst (§14.4) | espionage/opsec ratio (§21.3) |
+| RNG | Yes (seeded, Phase 5) | No (pure derivation) |
+
+Resolution of the previously-silent overlap:
+- **Intel tier does NOT modify spotting chance, and spotting does NOT modify intel
+  tier.** They never read each other. (Analyst and Contractor influence each system
+  through its own channel — spotting via the §14.4 ±10% terms, intel via the §21.3
+  weights — so mixing them would double-count. They stay separate by design.)
+- **Closed borders no longer gate tile-content visibility.** Under the old §18,
+  border status implicitly hid detail; that job now belongs **entirely** to the
+  intel tier. A viewer sees a target's tiles at their intel tier **regardless of
+  whether the border is open or closed**. Closed borders retain only their §14.4
+  role: triggering movement spotting/capture (and remaining public status, §18).
+- Consequently a FULL-tier viewer already has standing unit-and-output visibility on
+  a target's tiles; spotting remains the orthogonal mechanic by which that same
+  target catches the viewer's **intruding** units. The two never contradict.
+
+---
+
+*End of GAME_SPEC.md. Companion: DECISIONS.md (D-001 – D-054). Amend both together
 as later build phases surface gaps.*
