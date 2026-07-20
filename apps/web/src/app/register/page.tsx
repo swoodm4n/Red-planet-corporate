@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/client/api";
-import { PARENT_LABELS, PERSONNEL_LABELS, PERSONNEL_TYPES } from "@/lib/client/labels";
+import { PARENT_LABELS, PARENT_PERK_INFO, PERSONNEL_LABELS, PERSONNEL_TYPES } from "@/lib/client/labels";
 
 const PARENTS = Object.keys(PARENT_LABELS);
 
@@ -111,13 +111,27 @@ export default function RegisterPage() {
           </div>
 
           {parentCompany && (
-            <label className="field">
+            <div className="field">
               <span className="field-label">Parent Perk</span>
-              <select className="console-input" value={parentPerk} onChange={(e) => setParentPerk(e.target.value as "A" | "B")}>
-                <option value="A">Perk A</option>
-                <option value="B">Perk B</option>
-              </select>
-            </label>
+              <div className="perk-bonus">
+                Company stockpile bonus (granted with either perk): {PARENT_PERK_INFO[parentCompany].storedBonus}
+              </div>
+              <div className="perk-grid" style={{ marginBottom: 12 }}>
+                {(["A", "B"] as const).map((k) => {
+                  const info = PARENT_PERK_INFO[parentCompany][k];
+                  return (
+                    <div
+                      key={k}
+                      className={`choice perk-choice ${parentPerk === k ? "selected" : ""}`}
+                      onClick={() => setParentPerk(k)}
+                    >
+                      <div className="perk-head">Perk {k} — {info.label}</div>
+                      <div className="perk-desc">{info.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
 
           <span className="field-label">Choice Personnel (pick exactly 2)</span>

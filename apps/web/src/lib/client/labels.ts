@@ -9,6 +9,99 @@ export const PARENT_LABELS: Record<string, string> = {
   GENESIS_TECH: "Genesis Tech Industries",
 };
 
+/**
+ * Parent-company perk help text for the registration picker. Display-only.
+ *
+ * Grounded in the engine's actual setup logic, NOT just GAME_SPEC prose:
+ *   - PARENTS table + ParentSpec in packages/engine/src/constants.ts
+ *   - buildGame() / subdivision setup in packages/engine/src/state.ts
+ *
+ * What the engine actually does at setup:
+ *   1. Applies the company's `storedBonus` to starting resources — the SAME for
+ *      both perk A and B (it is a company bonus, not a per-perk bonus).
+ *   2. If the chosen perk has a `freeBuilding`, places that building at HQ.
+ *      This free building is the ONLY mechanical difference between A and B.
+ *
+ * Not implemented in the engine (so deliberately NOT promised here):
+ *   - Omega Security's perks carry only a `note` string ("HQ free Fortification",
+ *     "free Contractor Personnel Module") that state.ts never consumes — no
+ *     Fortification or Personnel Module is installed, so its two perks are
+ *     currently mechanically identical (stored bonus only). Flagged below.
+ *   - The §5 ER-25 bonus actions / company Corporate Actions (Bumper Harvest,
+ *     Strategic Reserve, etc.) do not exist in the engine's action set.
+ */
+export interface PerkInfo { label: string; desc: string; }
+export interface ParentPerkInfo { storedBonus: string; A: PerkInfo; B: PerkInfo; }
+
+export const PARENT_PERK_INFO: Record<string, ParentPerkInfo> = {
+  TERRA_AGRICULTURAL: {
+    storedBonus: "+10 Food, +10 Water",
+    A: {
+      label: "Free Bio Facility",
+      desc: "Farm dome. You start with a Bio Facility already built beside HQ (saves its 12 Min + 8 Cr + 3 W build cost). Once garrisoned with 2 Engineers it yields +2 Food/turn.",
+    },
+    B: {
+      label: "Free Water Reclamation",
+      desc: "Ice-melt plant. You start with a Water Reclamation building beside HQ (saves 12 Min + 8 Cr). Garrisoned with 2 Engineers it yields +2 Water/turn.",
+    },
+  },
+  UNIFIED_MINING: {
+    storedBonus: "+15 Minerals, +5 Energy",
+    A: {
+      label: "Free Extraction Site",
+      desc: "Ore mine. You start with an Extraction Site already built (saves 12 Min + 8 Cr). Garrisoned with 3 Engineers it yields +2 Minerals/turn.",
+    },
+    B: {
+      label: "Free Power Facility",
+      desc: "Reactor. You start with a Power Facility already built (saves 12 Min + 8 Cr). Garrisoned with 2 Engineers it yields +2 Energy/turn.",
+    },
+  },
+  STELLAR_DYNAMICS: {
+    storedBonus: "+10 Credits, +10 Minerals",
+    A: {
+      label: "Free Transit Hub",
+      desc: "Logistics depot. You start with a Transit Hub already built (saves 12 Min + 10 Cr + 4 R). Unlocks Market Sale (sell up to 10 units/turn) and serves as your trade-network node; garrison 2 Engineers + 1 Administrator.",
+    },
+    B: {
+      label: "Free Warehouse",
+      desc: "Storage bay. You start with a Warehouse already built (saves 8 Min + 6 Cr). Raises your storage cap by +20 on every resource and enables Resource Transfer; garrison 2 Engineers.",
+    },
+  },
+  HELIX_PHARMA: {
+    storedBonus: "+10 Food, +5 Research",
+    A: {
+      label: "Free Research Complex",
+      desc: "Lab. You start with a Research Complex already built (saves 14 Min + 10 Cr). Garrisoned with 3 Innovators it yields +2 Research/turn.",
+    },
+    B: {
+      label: "Free Bio Facility",
+      desc: "Farm dome. You start with a Bio Facility already built (saves 12 Min + 8 Cr + 3 W). Garrisoned with 2 Engineers it yields +2 Food/turn.",
+    },
+  },
+  OMEGA_SECURITY: {
+    storedBonus: "+10 Credits, +5 Minerals",
+    A: {
+      label: "Hardened HQ (intended: free Fortification)",
+      desc: "The security firm's own HQ is meant to ship pre-fitted with a Fortification. NOTE: the engine does not currently install this Fortification at setup, so this perk presently grants only the shared +10 Cr / +5 Min stockpile — mechanically identical to Perk B until it is wired up.",
+    },
+    B: {
+      label: "Embedded Contractor (intended: free Personnel Module)",
+      desc: "Meant to bolt a Contractor Personnel Module onto a building of your choice. NOTE: the engine does not currently install this module at setup, so this perk presently grants only the shared +10 Cr / +5 Min stockpile — mechanically identical to Perk A until it is wired up.",
+    },
+  },
+  GENESIS_TECH: {
+    storedBonus: "+8 Research, +10 Credits",
+    A: {
+      label: "Free Communications Array",
+      desc: "Sensor mast. You start with a Communications Array already built (saves 10 Min + 14 Cr + 4 R). Gives intel range out to 2 hexes plus an Analyst intel action; garrison 2 Analysts + 1 Engineer.",
+    },
+    B: {
+      label: "Free Research Complex",
+      desc: "Lab. You start with a Research Complex already built (saves 14 Min + 10 Cr). Garrisoned with 3 Innovators it yields +2 Research/turn.",
+    },
+  },
+};
+
 export const RESOURCE_LABELS: Record<string, string> = {
   CREDITS: "Credits",
   ENERGY: "Energy",

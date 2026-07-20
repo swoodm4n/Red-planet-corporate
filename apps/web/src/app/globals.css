@@ -479,6 +479,17 @@ input.console-input::placeholder, textarea.console-input::placeholder { color: v
 .choice:hover { border-color: var(--green-dim); color: var(--text-primary); }
 .choice.selected { border-color: var(--green-bright); color: var(--green-bright); background: var(--bg-panel-2); }
 
+.perk-bonus { font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; }
+.perk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.perk-choice { padding: 10px 12px; }
+.perk-head { font-size: 12px; font-weight: 700; color: inherit; margin-bottom: 4px; }
+.perk-desc { font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
+.perk-choice.selected .perk-desc { color: var(--text-primary); }
+
+@media (max-width: 640px) {
+  .perk-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 640px) {
   .main { padding: 12px; }
   .sidebar { width: 62px; }
