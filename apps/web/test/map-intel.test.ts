@@ -28,10 +28,19 @@ const GAME_ID = 1;
 const M_EMAIL = "itest-map@example.com";
 
 // Seed placement (prisma/seed.ts): subdivision 1 (Terra) HQ {2,2}; subdivision 3
-// (Stellar) HQ {6,2} with default opsec = 1 (no contractors). Viewer = sub 1.
+// (Stellar) HQ {6,2}. Every subdivision starts with 1 Contractor, so a bare target's
+// opsec = INTEL_OPSEC_BASE(1) + 1 Contractor = 2 (GAME_SPEC §21.3-4). Viewer = sub 1
+// (Terra: no starting Analysts/Sensor/Comms), so espionage(viewer) = 1 + analysts.
 const OWN_HQ = { col: 2, row: 2 };
-const TARGET_HQ = { col: 6, row: 2 }; // subdivision 3's HQ; opsec 1
+const TARGET_HQ = { col: 6, row: 2 }; // subdivision 3's HQ; opsec 2
 const VIEWER_SUB = 1;
+
+// Tier boundaries against a fresh target opsec = 2, evaluated by the integer-exact
+// cross-multiplication of §21.4 with e = espionage(viewer) = 1 + analysts, o = 2:
+//   LOW    2e <  3o (=6)  -> e <= 2  -> analysts <= 1
+//   MEDIUM  e <  3o (=6)  -> e in {3,4,5} -> analysts in {2,3,4}   (min 2)
+//   HIGH    e <  9o (=18) -> e in {6..17}  -> analysts in {5..16}  (min 5)
+//   FULL    e >= 9o (=18) -> e >= 18       -> analysts >= 17       (min 17)
 
 function ctx(params: Record<string, string>) {
   return { params: Promise.resolve(params) };
@@ -61,16 +70,25 @@ async function loginAs(email: string, password: string): Promise<string> {
 }
 
 /**
- * Set the number of extra AVAILABLE ANALYST personnel on `subId` (test-owned ids
- * 900000+), rebuilding the persisted snapshot. Espionage(sub) = 1 + analysts,
- * so this deterministically controls the viewer's tier against a fixed target.
+ * Set the viewer's espionage to exactly `1 + n` by making ANALYST personnel the sole
+ * espionage source. Strips every other espionage contributor (existing Analysts, and
+ * the COMMUNICATIONS_ARRAY / SENSOR_ARRAY / COMMAND_SUITE modules & buildings that
+ * §21.3 counts) so the tier is a deterministic function of `n` alone — independent of
+ * any incidental prior game state (e.g. a turn already resolved by another test file).
+ * Test-owned analysts use ids 900000+. Espionage(viewer) = INTEL_ESPIONAGE_BASE(1) + n.
  */
 async function setViewerAnalysts(subId: number, n: number): Promise<void> {
   const row = await prisma.game.findUniqueOrThrow({ where: { id: GAME_ID } });
   const game = deserializeGame(row.stateJson as Record<string, unknown>);
   const sub = game.subdivisions.find((s) => s.id === subId);
   if (!sub) throw new Error("subdivision not found");
-  sub.personnel = sub.personnel.filter((p) => p.id < 900000);
+  // Remove all pre-existing Analyst personnel (any id) so only our n test analysts count.
+  sub.personnel = sub.personnel.filter((p) => p.type !== "ANALYST");
+  // Neutralise the other §21.3 espionage sources on the viewer.
+  sub.buildings = sub.buildings.filter((b) => b.type !== "COMMUNICATIONS_ARRAY");
+  for (const b of sub.buildings) {
+    b.modules = b.modules.filter((m) => m.type !== "SENSOR_ARRAY" && m.type !== "COMMAND_SUITE");
+  }
   for (let i = 0; i < n; i++) {
     sub.personnel.push({ id: 900000 + i, type: "ANALYST", status: "AVAILABLE", unavailableUntilTurn: 0 });
   }
@@ -168,7 +186,7 @@ describe("own tile is always full detail", () => {
 
 describe("opponent tile is gated by the server-computed intel tier", () => {
   it("LOW (default): public fields only, no building count", async () => {
-    await setViewerAnalysts(VIEWER_SUB, 0); // espionage 1 vs opsec 1 -> LOW
+    await setViewerAnalysts(VIEWER_SUB, 0); // espionage 1 vs opsec 2 -> LOW
     const res = await tile(TARGET_HQ.col, TARGET_HQ.row, mCookie);
     expect(res.status).toBe(200);
     const { tile: t } = await res.json();
@@ -182,7 +200,7 @@ describe("opponent tile is gated by the server-computed intel tier", () => {
   });
 
   it("MEDIUM: building count only, no types/units", async () => {
-    await setViewerAnalysts(VIEWER_SUB, 1); // espionage 2 vs opsec 1 -> MEDIUM
+    await setViewerAnalysts(VIEWER_SUB, 2); // espionage 3 vs opsec 2 -> MEDIUM
     const res = await tile(TARGET_HQ.col, TARGET_HQ.row, mCookie);
     const { tile: t } = await res.json();
     expect(t.intelTier).toBe("MEDIUM");
@@ -196,7 +214,7 @@ describe("opponent tile is gated by the server-computed intel tier", () => {
   });
 
   it("HIGH: building types + unit count, but no outputs/unit breakdown", async () => {
-    await setViewerAnalysts(VIEWER_SUB, 2); // espionage 3 vs opsec 1 -> HIGH
+    await setViewerAnalysts(VIEWER_SUB, 5); // espionage 6 vs opsec 2 -> HIGH
     const res = await tile(TARGET_HQ.col, TARGET_HQ.row, mCookie);
     const { tile: t } = await res.json();
     expect(t.intelTier).toBe("HIGH");
@@ -209,7 +227,7 @@ describe("opponent tile is gated by the server-computed intel tier", () => {
   });
 
   it("FULL: resource output + unit type/hull breakdown, still no ownBuildings", async () => {
-    await setViewerAnalysts(VIEWER_SUB, 8); // espionage 9 vs opsec 1 -> FULL
+    await setViewerAnalysts(VIEWER_SUB, 17); // espionage 18 vs opsec 2 -> FULL
     const res = await tile(TARGET_HQ.col, TARGET_HQ.row, mCookie);
     const { tile: t } = await res.json();
     expect(t.intelTier).toBe("FULL");
@@ -269,7 +287,23 @@ describe("admin bypass", () => {
   });
 });
 
-describe("off-map coordinates", () => {
+describe("unclaimed / off-map tiles", () => {
+  it("an unclaimed in-bounds tile returns public terrain only (tier LOW, no private data) [D-055]", async () => {
+    // {4,5} is in-bounds but owned by nobody at seed (only HQ hexes are claimed).
+    const res = await tile(4, 5, mCookie);
+    expect(res.status).toBe(200);
+    const { tile: t } = await res.json();
+    expect(t.owner).toBeNull();
+    expect(t.intelTier).toBe("LOW");
+    expect(t.hasHQ).toBe(false);
+    expect(t.hasOutpost).toBe(false);
+    expect(t).not.toHaveProperty("buildingCount");
+    expect(t).not.toHaveProperty("buildings");
+    expect(t).not.toHaveProperty("resourceOutput");
+    expect(t).not.toHaveProperty("units");
+    expect(t).not.toHaveProperty("ownBuildings");
+  });
+
   it("returns 404 for a tile outside the 12x8 grid", async () => {
     const res = await tile(99, 99, mCookie);
     expect(res.status).toBe(404);
