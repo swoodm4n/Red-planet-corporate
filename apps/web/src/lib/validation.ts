@@ -45,6 +45,14 @@ export const ordersSchema = z.object({
   notes: z.array(z.string()).default([]),
 });
 
+// Available-actions query: the player's in-progress draft orders. Structural only
+// (the engine derives validity); subdivisionId/turnNumber are server-side. Only
+// buildingActions + unitActions affect attention ([D-058]/[D-059]); the rest of a
+// draft submission is accepted-but-ignored so the client can pass a full draft.
+export const availableActionsSchema = z.object({
+  draftOrders: ordersSchema.partial().optional(),
+});
+
 export const proposalSchema = z.object({
   subdivisionId: z.number().int().optional(),
   proposalText: z.string().min(3).max(4000),
