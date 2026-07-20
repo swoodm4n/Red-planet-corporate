@@ -218,6 +218,19 @@ function reqString(type: string): string {
   return parts.length ? parts.join(" + ") : "No garrison required";
 }
 
+// Per-unit marker showing whether the current draft has already committed this
+// unit to a task this turn (garrisoned or actor of a queued unit action).
+function AssignBadge({ committed, reason }: { committed: boolean; reason?: string }) {
+  return (
+    <span
+      className={`badge ${committed ? "badge-cyan" : "badge-dim"}`}
+      title={committed ? reason ?? "Assigned this turn" : "Not assigned to any task in this draft"}
+    >
+      {committed ? "ASSIGNED" : "AVAILABLE"}
+    </span>
+  );
+}
+
 export default function OrdersPage() {
   const { gameId, subdivisionId, game } = usePlayer();
   const [draft, setDraft] = useState<DraftSubmission | null>(null);
@@ -301,6 +314,30 @@ export default function OrdersPage() {
   // Units left AVAILABLE in the draft can take unit actions this turn.
   const availableUnits = assignable.filter((p) => draftAssignmentOf(p.id) === "UNASSIGNED");
   const availableIds = new Set(availableUnits.map((u) => u.id));
+
+  // Units this DRAFT has already committed to a task this turn. A unit counts as
+  // committed when it is either (a) garrisoned into a building/vehicle — in this
+  // game garrisoning IS the act of tasking a unit to run that structure, and it
+  // makes the unit unavailable for anything else this draft (Step 3 already hides
+  // garrisoned units from the unit-action picker) — or (b) named as the actor of a
+  // queued unit action. (targetUnitId on a unit action points at a RIVAL's unit, so
+  // it never commits one of your own.) Rebuilt from draft state on every render, so
+  // it stays live as orders are added/removed and clears whenever the draft resets.
+  const committedReason = new Map<number, string>();
+  for (const g of draft.garrison) {
+    const t = g.target;
+    if (t.kind === "BUILDING") {
+      const b = own.buildings.find((x) => x.id === t.buildingId);
+      committedReason.set(g.unitId, `Stationed at ${b ? `${buildingLabel(b.type)} ${hexLabel(b.hex.col, b.hex.row)}` : `building #${t.buildingId}`}`);
+    } else if (t.kind === "VEHICLE") {
+      committedReason.set(g.unitId, `Crewing vehicle #${t.vehicleId}`);
+    }
+  }
+  for (const a of draft.unitActions) {
+    const prev = committedReason.get(a.unitId);
+    const label = `Tasked: ${actionLabel(a.action)}`;
+    committedReason.set(a.unitId, prev ? `${prev}; ${label}` : label);
+  }
 
   // Live garrison tally per building from the current draft.
   const garrisonByBuilding = new Map<number, Record<string, number>>();
@@ -508,7 +545,7 @@ export default function OrdersPage() {
               {assignable.length > 0 && (
                 <div className="table-scroll">
                   <table>
-                    <thead><tr><th>PERSONNEL</th><th>ASSIGN TO</th></tr></thead>
+                    <thead><tr><th>PERSONNEL</th><th>STATUS</th><th>ASSIGN TO</th></tr></thead>
                     <tbody>
                       {assignable.map((p) => (
                         <tr key={p.id}>
@@ -517,6 +554,9 @@ export default function OrdersPage() {
                               <PersonnelIcon type={p.type} size={18} />
                               <span>{PERSONNEL_LABELS[p.type] ?? titleCase(p.type)} <span className="td-dim">#{p.id}</span></span>
                             </span>
+                          </td>
+                          <td>
+                            <AssignBadge committed={committedReason.has(p.id)} reason={committedReason.get(p.id)} />
                           </td>
                           <td>
                             <select className="console-input inline-input" style={{ width: "100%" }} value={draftAssignmentOf(p.id)} onChange={(e) => setGarrison(p.id, e.target.value)}>
@@ -654,7 +694,7 @@ export default function OrdersPage() {
                       <span className="field-label" style={{ marginBottom: 0 }}>Unit</span>
                       <select className="console-input inline-input" value={uaUnit} onChange={(e) => setUaUnit(e.target.value === "" ? "" : Number(e.target.value))}>
                         <option value="">select…</option>
-                        {availableUnits.map((u) => <option key={u.id} value={u.id}>{PERSONNEL_LABELS[u.type] ?? titleCase(u.type)} #{u.id}</option>)}
+                        {availableUnits.map((u) => <option key={u.id} value={u.id}>{PERSONNEL_LABELS[u.type] ?? titleCase(u.type)} #{u.id}{committedReason.has(u.id) ? " · ASSIGNED" : ""}</option>)}
                       </select>
                     </label>
                     <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
