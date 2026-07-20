@@ -6,8 +6,9 @@ import { usePlayer } from "@/lib/client/gameContext";
 import { Loading, ErrorMsg } from "@/lib/client/Shell";
 import { ConfirmButton } from "@/lib/client/Confirm";
 import { api } from "@/lib/client/api";
-import { fromSubmission, emptyDraft, saveDraft, validateDraft, type DraftSubmission } from "@/lib/client/orders";
+import { fromSubmission, emptyDraft, saveDraft, validateDraft, fetchAvailableActions, type DraftSubmission } from "@/lib/client/orders";
 import type {
+  AvailableActionsResponse,
   InvalidOrder,
   OrdersResponse,
   OwnBuilding,
@@ -16,7 +17,6 @@ import type {
   ReportResponse,
 } from "@/lib/client/types";
 import {
-  BUILDING_ACTIONS,
   BUILDING_TYPES,
   CORPORATE_ACTIONS,
   GARRISON_MIN,
@@ -32,7 +32,6 @@ import {
   hexLabel,
   paramLabel,
   titleCase,
-  unitDotClass,
 } from "@/lib/client/labels";
 import { BuildingIcon, PersonnelIcon } from "@/lib/client/Icon";
 
@@ -224,7 +223,7 @@ function AssignBadge({ committed, reason }: { committed: boolean; reason?: strin
   return (
     <span
       className={`badge ${committed ? "badge-cyan" : "badge-dim"}`}
-      title={committed ? reason ?? "Assigned this turn" : "Not assigned to any task in this draft"}
+      title={committed ? reason ?? "Attention spent this turn" : "Attention unspent — this unit can still back an action this turn"}
     >
       {committed ? "ASSIGNED" : "AVAILABLE"}
     </span>
@@ -243,10 +242,18 @@ export default function OrdersPage() {
   const [msgOk, setMsgOk] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Live per-building available-actions + per-unit attention from the server
+  // (§22.9 / [D-064]). Recomputed from the draft on every edit; the single source
+  // of truth for which building actions are offered and the ASSIGNED/AVAILABLE badge.
+  const [avail, setAvail] = useState<AvailableActionsResponse | null>(null);
+  const [availErr, setAvailErr] = useState<string | null>(null);
+  // Which building's action panel is expanded (null = none).
+  const [openBuilding, setOpenBuilding] = useState<number | null>(null);
+  // Per-(building,action) param entry for building actions that need parameters,
+  // keyed "<buildingId>:<action>".
+  const [actionParams, setActionParams] = useState<Record<string, Record<string, string>>>({});
+
   // add-form state
-  const [baBuilding, setBaBuilding] = useState<number | "">("");
-  const [baAction, setBaAction] = useState(BUILDING_ACTIONS[0]);
-  const [baParams, setBaParams] = useState<Record<string, string>>({});
   const [uaUnit, setUaUnit] = useState<number | "">("");
   const [uaAction, setUaAction] = useState(UNIT_ACTIONS[0]);
   const [uaParams, setUaParams] = useState<Record<string, string>>({});
@@ -283,6 +290,32 @@ export default function OrdersPage() {
     };
   }, [gameId, subdivisionId]);
 
+  // Live available-actions: re-query the server whenever the draft's building or
+  // unit actions change (garrison/political/corporate are attention-neutral, so
+  // they don't affect the result). Debounced so rapid edits collapse into one call.
+  // The returned `buildings`/`unitAttention` maps are the sole source of truth for
+  // the per-building action lists and the ASSIGNED/AVAILABLE badges (§22.9).
+  const baKey = draft ? JSON.stringify(draft.buildingActions) : "";
+  const uaKey = draft ? JSON.stringify(draft.unitActions) : "";
+  useEffect(() => {
+    if (subdivisionId == null || !draft) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      fetchAvailableActions(gameId, draft)
+        .then((r) => {
+          if (cancelled) return;
+          setAvail(r);
+          setAvailErr(null);
+        })
+        .catch((e) => !cancelled && setAvailErr((e as Error).message));
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameId, subdivisionId, baKey, uaKey]);
+
   if (subdivisionId == null) {
     return (
       <div className="page">
@@ -315,28 +348,40 @@ export default function OrdersPage() {
   const availableUnits = assignable.filter((p) => draftAssignmentOf(p.id) === "UNASSIGNED");
   const availableIds = new Set(availableUnits.map((u) => u.id));
 
-  // Units this DRAFT has already committed to a task this turn. A unit counts as
-  // committed when it is either (a) garrisoned into a building/vehicle — in this
-  // game garrisoning IS the act of tasking a unit to run that structure, and it
-  // makes the unit unavailable for anything else this draft (Step 3 already hides
-  // garrisoned units from the unit-action picker) — or (b) named as the actor of a
-  // queued unit action. (targetUnitId on a unit action points at a RIVAL's unit, so
-  // it never commits one of your own.) Rebuilt from draft state on every render, so
-  // it stays live as orders are added/removed and clears whenever the draft resets.
-  const committedReason = new Map<number, string>();
-  for (const g of draft.garrison) {
-    const t = g.target;
-    if (t.kind === "BUILDING") {
-      const b = own.buildings.find((x) => x.id === t.buildingId);
-      committedReason.set(g.unitId, `Stationed at ${b ? `${buildingLabel(b.type)} ${hexLabel(b.hex.col, b.hex.row)}` : `building #${t.buildingId}`}`);
-    } else if (t.kind === "VEHICLE") {
-      committedReason.set(g.unitId, `Crewing vehicle #${t.vehicleId}`);
-    }
+  // ATTENTION (§22): a unit's attention is spent — badge ASSIGNED — once the draft
+  // commits it to a building or unit action this turn. The authoritative flag is the
+  // server's `unitAttention` map (which walks the draft with the engine's own
+  // lowest-id selection); we never derive it client-side. `attentionSpent` reads it
+  // directly; `attentionReason` is only a best-effort tooltip for what spent it.
+  function attentionSpent(unitId: number): boolean {
+    return avail?.unitAttention?.[String(unitId)] === true;
   }
-  for (const a of draft.unitActions) {
-    const prev = committedReason.get(a.unitId);
-    const label = `Tasked: ${actionLabel(a.action)}`;
-    committedReason.set(a.unitId, prev ? `${prev}; ${label}` : label);
+  function attentionReason(unitId: number): string {
+    const ua = draft!.unitActions.find((a) => a.unitId === unitId);
+    if (ua) return `Attention spent: ${actionLabel(ua.action)}`;
+    const p = unitById.get(unitId);
+    if (p?.assignedBuildingId != null) {
+      const b = own.buildings.find((x) => x.id === p.assignedBuildingId);
+      const ba = draft!.buildingActions.find((a) => a.buildingId === p.assignedBuildingId);
+      if (ba) return `Backing ${actionLabel(ba.action)}${b ? ` at ${buildingLabel(b.type)} ${hexLabel(b.hex.col, b.hex.row)}` : ""}`;
+    }
+    return "Attention spent this turn";
+  }
+
+  // Building actions the server currently offers for a building (string key over the
+  // JSON map). Empty until the first available-actions response lands.
+  function actionsForBuilding(buildingId: number): string[] {
+    return avail?.buildings?.[String(buildingId)] ?? [];
+  }
+
+  // Turn-START garrison shortfall (from the report projection) — what the server's
+  // availableActions predicate actually sees. Used only to explain an empty list.
+  function turnStartOperational(b: OwnBuilding): boolean {
+    const req = GARRISON_MIN[b.type] ?? {};
+    for (const [t, n] of Object.entries(req)) {
+      if ((b.garrison[t] ?? 0) < (n ?? 0)) return false;
+    }
+    return true;
   }
 
   // Live garrison tally per building from the current draft.
@@ -374,10 +419,22 @@ export default function OrdersPage() {
     });
   }
 
-  function addBuildingAction() {
-    if (baBuilding === "") return;
-    setDraft((d) => d && { ...d, buildingActions: [...d.buildingActions, { buildingId: Number(baBuilding), action: baAction, params: buildParams(baAction, baParams) }] });
-    setBaParams({});
+  // Building actions are now added only from the building's own action panel. Params
+  // (targets/quantities) are still gathered here because available-actions does NOT
+  // validate them ([D-063]) — orders/validate + resolution do.
+  const paramKey = (buildingId: number, action: string) => `${buildingId}:${action}`;
+  const getActionParams = (buildingId: number, action: string) => actionParams[paramKey(buildingId, action)] ?? {};
+  function setActionParam(buildingId: number, action: string, k: string, v: string) {
+    setActionParams((s) => ({ ...s, [paramKey(buildingId, action)]: { ...(s[paramKey(buildingId, action)] ?? {}), [k]: v } }));
+  }
+  function addBuildingActionFor(buildingId: number, action: string) {
+    const params = buildParams(action, getActionParams(buildingId, action));
+    setDraft((d) => d && { ...d, buildingActions: [...d.buildingActions, { buildingId, action, params }] });
+    setActionParams((s) => {
+      const next = { ...s };
+      delete next[paramKey(buildingId, action)];
+      return next;
+    });
   }
   function addUnitAction() {
     if (uaUnit === "") return;
@@ -469,11 +526,13 @@ export default function OrdersPage() {
 
       <div className="help-box">
         <span className="help-title">HOW ORDERS WORK</span>
-        Each turn you (1) <strong>garrison</strong> your personnel into buildings so they run, then (2) queue{" "}
+        Each turn you (1) <strong>garrison</strong> your personnel into buildings so they run, then queue{" "}
         <strong>building</strong>, <strong>unit</strong>, <strong>political</strong> and <strong>corporate</strong> actions.
-        A building only produces and can act when its minimum garrison is met. Nothing is locked in until you press{" "}
-        <strong>Submit Turn</strong>, and you can revise and re-submit as often as you like before the deadline. Use{" "}
-        <strong>Check Orders</strong> for a dry run against the engine at any time.
+        <strong> Click a building in Step 1</strong> to open its own list of actions — you only ever see the actions it can
+        actually perform right now (the server checks garrison, modules and per-unit attention). Once a unit backs an
+        action its attention is spent for the turn, so any action needing it drops off every list until next turn. Nothing
+        is locked in until you press <strong>Submit Turn</strong>; revise and re-submit as often as you like before the
+        deadline, and use <strong>Check Orders</strong> for a full engine dry run at any time.
       </div>
 
       {understaffed.length > 0 && (
@@ -520,32 +579,94 @@ export default function OrdersPage() {
                   const { met, missing } = buildingShortfall(b);
                   const have = garrisonByBuilding.get(b.id) ?? {};
                   const haveStr = Object.entries(have).map(([t, n]) => `${n} ${PERSONNEL_LABELS[t] ?? titleCase(t)}`).join(" + ") || "empty";
+                  const open = openBuilding === b.id;
+                  const acts = actionsForBuilding(b.id);
+                  const queuedHere = draft!.buildingActions.filter((a) => a.buildingId === b.id).length;
                   return (
-                    <div key={b.id} className="bldg-card" style={{ cursor: "default" }}>
-                      <div className="bldg-card-top">
-                        <span className="icon-label">
-                          <BuildingIcon type={b.type} size={22} />
-                          <span className="bldg-name">{buildingLabel(b.type)}</span>
-                          <span className="bldg-hex">{hexLabel(b.hex.col, b.hex.row)}</span>
-                        </span>
-                        <span className={`badge ${met ? "badge-green" : "badge-amber"}`}>{met ? "STAFFED" : "UNDERSTAFFED"}</span>
-                      </div>
-                      <div className="bldg-card-meta">
-                        <span>Requires: {reqString(b.type)}</span>
-                        <span>Assigned: {haveStr}</span>
-                        {!met && <span style={{ color: "var(--amber)" }}>Needs {missing.join(", ")}</span>}
-                      </div>
+                    <div key={b.id} className={`bldg-card${open ? " selected" : ""}`}>
+                      <button
+                        type="button"
+                        className="bldg-card-toggle"
+                        onClick={() => setOpenBuilding(open ? null : b.id)}
+                        aria-expanded={open}
+                      >
+                        <div className="bldg-card-top">
+                          <span className="icon-label">
+                            <BuildingIcon type={b.type} size={22} />
+                            <span className="bldg-name">{buildingLabel(b.type)}</span>
+                            <span className="bldg-hex">{hexLabel(b.hex.col, b.hex.row)}</span>
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {queuedHere > 0 && <span className="badge badge-cyan">{queuedHere} QUEUED</span>}
+                            <span className={`badge ${met ? "badge-green" : "badge-amber"}`}>{met ? "STAFFED" : "UNDERSTAFFED"}</span>
+                            <span className="dim" style={{ fontSize: 11 }}>{open ? "▾" : "▸"}</span>
+                          </span>
+                        </div>
+                        <div className="bldg-card-meta">
+                          <span>Requires: {reqString(b.type)}</span>
+                          <span>Assigned: {haveStr}</span>
+                          {!met && <span style={{ color: "var(--amber)" }}>Needs {missing.join(", ")}</span>}
+                        </div>
+                      </button>
+
+                      {open && (
+                        <div className="bldg-actions">
+                          <div className="section-label" style={{ marginTop: 0 }}>AVAILABLE ACTIONS</div>
+                          {avail == null ? (
+                            <div className="order-slot"><span className="order-slot-empty-text">Loading available actions…</span></div>
+                          ) : acts.length === 0 ? (
+                            <div className="order-slot">
+                              <span className="order-slot-empty-text">
+                                {!turnStartOperational(b)
+                                  ? "Not operational at the start of this turn — its garrison is below the minimum, so it offers no actions. (New garrison assignments take effect next turn.)"
+                                  : "No actions available for this building right now — every action's required units have already had their attention spent this turn, or none apply."}
+                              </span>
+                            </div>
+                          ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {acts.map((a) => {
+                                const hints = FIELD_HINTS[a] ?? [];
+                                return (
+                                  <div key={a} className="order-slot filled" style={{ flexDirection: "column", alignItems: "stretch", gap: 6 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                                      <span className="icon-label">
+                                        <BuildingIcon type={b.type} size={16} />
+                                        <span><strong>{actionLabel(a)}</strong></span>
+                                      </span>
+                                      <button className="btn btn-sm" onClick={() => addBuildingActionFor(b.id, a)}>+ QUEUE</button>
+                                    </div>
+                                    <div className="op-desc" style={{ marginTop: 0 }}>{actionInfo(a).desc}</div>
+                                    {hints.length > 0 && (
+                                      <ParamInputs
+                                        fields={hints}
+                                        values={getActionParams(b.id, a)}
+                                        onChange={(k, v) => setActionParam(b.id, a, k, v)}
+                                        ctx={{ buildings: own.buildings, rivals }}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {availErr && <div className="field-hint" style={{ color: "var(--amber)" }}>Could not refresh actions: {availErr}</div>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
 
               <div className="section-label" style={{ marginTop: 16 }}>PERSONNEL ROSTER · {availableUnits.length} unassigned of {assignable.length}</div>
+              <div className="field-hint" style={{ marginTop: 0, marginBottom: 8 }}>
+                <span className="badge badge-cyan">ASSIGNED</span> means this unit&apos;s attention is already spent by a queued action
+                this turn (server-confirmed); <span className="badge badge-dim">AVAILABLE</span> means it can still back one.
+              </div>
               {assignable.length === 0 && <div className="order-slot"><span className="order-slot-empty-text">You have no available personnel.</span></div>}
               {assignable.length > 0 && (
                 <div className="table-scroll">
                   <table>
-                    <thead><tr><th>PERSONNEL</th><th>STATUS</th><th>ASSIGN TO</th></tr></thead>
+                    <thead><tr><th>PERSONNEL</th><th>ATTENTION</th><th>ASSIGN TO</th></tr></thead>
                     <tbody>
                       {assignable.map((p) => (
                         <tr key={p.id}>
@@ -556,7 +677,7 @@ export default function OrdersPage() {
                             </span>
                           </td>
                           <td>
-                            <AssignBadge committed={committedReason.has(p.id)} reason={committedReason.get(p.id)} />
+                            <AssignBadge committed={attentionSpent(p.id)} reason={attentionSpent(p.id) ? attentionReason(p.id) : undefined} />
                           </td>
                           <td>
                             <select className="console-input inline-input" style={{ width: "100%" }} value={draftAssignmentOf(p.id)} onChange={(e) => setGarrison(p.id, e.target.value)}>
@@ -631,34 +752,16 @@ export default function OrdersPage() {
         </div>
 
         <div>
-          {/* ---- BUILDING ACTIONS ---- */}
+          {/* ---- QUEUED BUILDING ACTIONS ---- */}
           <div className="panel">
-            <div className="panel-head"><span>&#9635; STEP 2 · BUILDING ACTIONS</span></div>
+            <div className="panel-head"><span>&#9635; STEP 2 · BUILDING ACTIONS</span><span className="td-dim" style={{ fontSize: 10 }}>{draft.buildingActions.length} queued</span></div>
             <div className="panel-body">
               <div className="field-hint" style={{ marginTop: 0, marginBottom: 10 }}>
-                Actions a garrisoned building performs. The building must meet its garrison minimum for the action to resolve.
+                Add building actions by opening a building in <strong>Step 1</strong> — each building offers only the actions
+                it can currently perform (server-checked, live against attention). Queued actions appear here.
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span className="field-label" style={{ marginBottom: 0 }}>Building</span>
-                  <select className="console-input inline-input" value={baBuilding} onChange={(e) => setBaBuilding(e.target.value === "" ? "" : Number(e.target.value))}>
-                    <option value="">select…</option>
-                    {own.buildings.map((b) => <option key={b.id} value={b.id}>{buildingLabel(b.type)} {hexLabel(b.hex.col, b.hex.row)}</option>)}
-                  </select>
-                </label>
-                <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span className="field-label" style={{ marginBottom: 0 }}>Action</span>
-                  <select className="console-input inline-input" value={baAction} onChange={(e) => { setBaAction(e.target.value); setBaParams({}); }}>
-                    {BUILDING_ACTIONS.map((a) => <option key={a} value={a}>{actionLabel(a)}</option>)}
-                  </select>
-                </label>
-                <ParamInputs fields={FIELD_HINTS[baAction] ?? []} values={baParams} onChange={(k, v) => setBaParams((s) => ({ ...s, [k]: v }))} ctx={{ buildings: own.buildings, rivals }} />
-                <button className="btn btn-sm" onClick={addBuildingAction} disabled={baBuilding === ""}>+ ADD</button>
-              </div>
-              <div className="op-desc">{actionInfo(baAction).desc}</div>
-
-              <div style={{ marginTop: 12 }}>
-                {draft.buildingActions.length === 0 && <div className="order-slot"><span className="order-slot-empty-text">No building actions queued.</span></div>}
+              <div style={{ marginTop: 0 }}>
+                {draft.buildingActions.length === 0 && <div className="order-slot"><span className="order-slot-empty-text">No building actions queued. Open a building in Step 1 to add one.</span></div>}
                 {draft.buildingActions.map((a, i) => {
                   const b = own.buildings.find((x) => x.id === a.buildingId);
                   const where = b ? `${buildingLabel(b.type)} ${hexLabel(b.hex.col, b.hex.row)}` : `building #${a.buildingId}`;
@@ -694,7 +797,7 @@ export default function OrdersPage() {
                       <span className="field-label" style={{ marginBottom: 0 }}>Unit</span>
                       <select className="console-input inline-input" value={uaUnit} onChange={(e) => setUaUnit(e.target.value === "" ? "" : Number(e.target.value))}>
                         <option value="">select…</option>
-                        {availableUnits.map((u) => <option key={u.id} value={u.id}>{PERSONNEL_LABELS[u.type] ?? titleCase(u.type)} #{u.id}{committedReason.has(u.id) ? " · ASSIGNED" : ""}</option>)}
+                        {availableUnits.map((u) => <option key={u.id} value={u.id}>{PERSONNEL_LABELS[u.type] ?? titleCase(u.type)} #{u.id}{attentionSpent(u.id) ? " · ASSIGNED" : ""}</option>)}
                       </select>
                     </label>
                     <label style={{ display: "flex", flexDirection: "column", gap: 3 }}>

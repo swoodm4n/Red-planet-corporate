@@ -2,6 +2,7 @@
 
 import { api } from "@/lib/client/api";
 import type {
+  AvailableActionsResponse,
   BuildingActionOrder,
   CorporateActionOrder,
   EngineSubmission,
@@ -51,6 +52,26 @@ export async function saveDraft(gameId: number, draft: DraftSubmission): Promise
     politicalAction: draft.politicalAction ?? null,
     corporateActions: draft.corporateActions,
     notes: draft.notes,
+  });
+}
+
+/**
+ * Ask the server which building actions are currently valid for each of the
+ * caller's buildings, and which units' attention the draft has already spent
+ * (§22.9 / [D-064]). Only building + unit actions affect the result — garrison,
+ * political and corporate draft entries are attention-neutral and ignored server
+ * side, so we only send the two relevant arrays. Safe to call on every draft edit
+ * (nothing is persisted; the server computes on a clone).
+ */
+export async function fetchAvailableActions(
+  gameId: number,
+  draft: DraftSubmission,
+): Promise<AvailableActionsResponse> {
+  return api.post<AvailableActionsResponse>(`/api/games/${gameId}/orders/available-actions`, {
+    draftOrders: {
+      buildingActions: draft.buildingActions,
+      unitActions: draft.unitActions,
+    },
   });
 }
 

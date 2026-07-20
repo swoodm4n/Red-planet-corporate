@@ -233,6 +233,16 @@ export interface ReportResponse {
   standings: { leaders: Record<string, number | null>; standings: StandingRow[] };
 }
 
+export interface AvailableActionsResponse {
+  gameId: number;
+  turnNumber: number;
+  subdivisionId: number;
+  /** buildingId (string key) -> currently-valid BuildingActionType[]. */
+  buildings: Record<string, string[]>;
+  /** personnelId (string key) -> attention spent by the draft so far. */
+  unitAttention: Record<string, boolean>;
+}
+
 export interface OrdersResponse {
   gameId: number;
   turnNumber: number;
