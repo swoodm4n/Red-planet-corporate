@@ -1124,5 +1124,212 @@ Resolution of the previously-silent overlap:
 
 ---
 
-*End of GAME_SPEC.md. Companion: DECISIONS.md (D-001 – D-054). Amend both together
+## 22. Attention (per-unit, per-turn action budget) & Building Available-Action Derivation **[D-056–D-061]**
+
+Every unit has one unit of **attention** per turn. Taking an action spends the
+attention of the unit(s) that action *requires*; a spent unit backs no further
+action until attention **resets at the start of the next turn** (never carries
+over, never stockpiles). This is the single mechanism that stops a player
+re-running the same action all turn on the same unit (the pre-existing Phase-2 gap
+where N Sabotage orders could all name the same lone Analyst — [D-057]).
+
+### 22.1 Data model addition ([D-056])
+
+Add one field to Personnel (§3.5 / `types.ts` `Personnel`):
+```
+Personnel {
+  ...
+  attentionSpentThisTurn: boolean = false   // true once this unit has backed an action this turn
+}
+```
+- Type `boolean`; valid values `{false, true}`; persisted on the snapshot exactly
+  like `status` / `unavailableUntilTurn`.
+- `false` = attention unspent (unit can still back an action). `true` = spent.
+- New personnel (starting roster, requisition arrivals, colonist processing) are
+  created with `attentionSpentThisTurn = false`.
+- **Reset:** in **Phase 8**, as a new step **5c** (after `tickEffects`, *before*
+  `turnNumber += 1`), set `attentionSpentThisTurn = false` for **every** unit of
+  **every** subdivision, regardless of `status` (CAPTURED/LOST units simply never
+  get read). Placing the reset at end-of-turn (not start) keeps Phase 1/2 of turn
+  N+1 reading an already-clean board.
+- Attention is **not** a resource in the §2 sense (never bought/sold/scored). It is
+  purely an intra-turn action-budget flag.
+
+### 22.2 What "required units" means per action class ([D-057], [D-060])
+
+| Action class | How the required units are identified | Count |
+|---|---|---|
+| **Unit action** (§10.3) | The **explicit `order.unitId`** — that exact acting unit. | Always exactly 1 (the actor). Vehicle actions: see 22.4. |
+| **Building action** (§10.2) | **Implicit by type**: the garrisoned personnel of the type(s) named in the row's Garrison column, resolved to concrete units via `sub.personnel.filter(p => p.assignedBuildingId === b.id && p.status === "GARRISONED" && p.type === T)`. | The row's count (labor min, `2×` set, `2 Admin`, `2 Analyst`, `3 Engineer`, …). |
+| **Political / Corporate** (§10.4/§10.5) | Bind **no** `unitId` in the current schema → require **no** unit → spend **no** attention. Capped by their own 1-per-subdivision-per-turn allowance. See 22.5. | 0 (see [D-059]). |
+
+Requirements are **type + count**, never specific IDs — matching how `garrisonMin`
+already works (§7/[D-012]). Which *specific* qualifying unit pays is a deterministic
+tie-break (22.3), not player choice.
+
+### 22.3 Deterministic unit-selection tie-break ([D-057])
+
+When an action requires `count` units of type `T` and more than `count` qualifying
+units have unspent attention, spend the attention of the **lowest-`id` units**,
+canonical with the engine's ID-ordering tie-break ([D-016]/[D-018]).
+```
+selectAttentionUnits(candidates: Personnel[], T: PersonnelType, count: int, claimed: Set<id>):
+  pool = candidates
+         .filter(p => p.type == T
+                   && p.status ∈ eligibleStatus         // GARRISONED for building actions; AVAILABLE for unit actions
+                   && p.attentionSpentThisTurn == false
+                   && p.unavailableUntilTurn < turnNumber
+                   && !claimed.has(p.id))
+         .sort(by p.id ascending)
+  if pool.length < count: return FAIL           // not enough unspent attention
+  return pool.slice(0, count)                    // the `count` lowest ids
+```
+- **Unit actions:** `count == 1` and the actor is fixed by `order.unitId`; there is
+  no set to choose from — the check is simply "is `unit.attentionSpentThisTurn`
+  false (and not already claimed this submission)". If true → reject.
+- **Building actions:** candidates = that building's garrison of type `T`; select
+  the `count` lowest-id garrisoned units of that type.
+- **Multi-type requirements** (e.g. Command Coordination needs `2 Admin`, a
+  hypothetical `2 Engineer + 1 Contractor`): run `selectAttentionUnits` once per
+  `(type,count)` group; the order is offered/valid **only if every group succeeds**,
+  and taking it spends **all** selected units atomically ([D-060]). If any group
+  fails, the whole order is rejected and **no** attention is spent.
+
+### 22.4 Phase-2 attention accounting (closes the duplicate-unit bug, [D-057])
+
+Phase 2 (`validateActionsPhase`) must carry a per-subdivision working set
+`claimed: Set<unitId>` seeded empty (turn-start attention is all-false, [D-056]).
+Orders are validated in **declaration order** (greedy, consistent with [D-021]):
+```
+for each buildingAction / unitAction in submission order:
+    ...existing precondition checks (operational, type, cost, garrison-set)...
+    picked = selectAttentionUnits(...)          // per 22.3, reading `claimed`
+    if picked == FAIL: reject(order, "insufficient unspent attention"); continue
+    claimed ∪= picked.ids                        // reserve so a later order can't reuse them
+    accept(order); record picked.ids on the validated order for Phase 4/5 to spend
+```
+Then Phase 4 (building actions) and Phase 5 (unit actions), when they execute an
+accepted order, set `attentionSpentThisTurn = true` on exactly the recorded
+`picked.ids`. Because Phase 2 already reserved via `claimed`, execution never
+double-spends. This is the fix for the current gap: five Sabotage orders naming the
+same Analyst now yield **one** accepted order (first in declaration order) and four
+`INVALID: insufficient unspent attention` rejections.
+
+Ordering note: attention claiming is **intra-subdivision** and happens entirely in
+Phase 2 against turn-start state; it does not read other subdivisions and consumes
+no RNG, so it is invariant to inter-subdivision resolution order.
+
+### 22.5 Attention is turn-global, not phase/building-scoped ([D-059])
+
+Attention is a property of the **unit for the whole turn**, not scoped to a building
+or a phase. A unit whose attention is spent by *any* accepted order is unavailable
+to *every* other attention-gated order that turn, across building, unit, political,
+and corporate classes and across all buildings.
+- **Political/Corporate:** the current `PoliticalActionOrder`/`CorporateActionOrder`
+  schemas carry **no `unitId`**, so today they bind no unit and spend no attention —
+  they are limited solely by their 1-per-subdivision-per-turn caps (§10.4/§10.5). If
+  a future political/corporate action is made unit-bound (adds a required
+  `unitId`/type), it participates in the identical turn-global exclusion: that unit,
+  once spent politically, cannot then take a building/unit action the same turn, and
+  vice-versa. The principle is fixed even though no current entry exercises it.
+
+### 22.6 Garrison assignment does NOT spend attention ([D-058])
+
+Phase-1 garrison assignment (stationing a unit in a building / crewing a vehicle /
+leaving it AVAILABLE) is **presence/stationing, not an action** and spends **no**
+attention. A unit garrisoned this turn still has full unspent attention and can back
+a building action that same turn (subject to the building being operational and not
+built-this-turn, [D-022]). Attention is spent **only** by an accepted building/unit
+(or unit-bound political/corporate) **action order** in Phase 2/4/5/6.
+
+### 22.7 Vehicle (crewed) actions ([D-060])
+
+`VEHICLE_MOVE` / `VEHICLE_ATTACK` act through a crewed vehicle, not an AVAILABLE
+unit. Required units = the vehicle's **entire crew** (`v.crew`). The action is
+offered only if every crew member has `attentionSpentThisTurn == false`; executing
+it spends the attention of **all** crew members. This gates a vehicle to **one**
+crewed action per turn using the same all-crew rule as personnel (no separate
+per-vehicle flag needed). Crew are CREWING (not AVAILABLE) so they already cannot
+take personnel unit actions ([D-037]); attention additionally prevents two vehicle
+orders from sharing one crew.
+
+### 22.8 Which §10 action-table entries are attention-gated
+
+**Unit actions (§10.3): ALL are attention-gated** — each names an actor `unitId`
+and spends that 1 unit's attention. Full list (each = 1 unit of the stated type):
+Engineer — Construct Building, Install Module, Tier Upgrade, Place Outpost, Survey
+Hex, Demolish, Repair Building; Contractor — Patrol, Intercept, Enforce Territory,
+Escort; Analyst — Field Surveillance, Sabotage, Counter-Intel, Plant Intel,
+Investigate; Administrator — Trade Action, Negotiate, Lobby, Denounce; Innovator —
+Field Research, Tech Consult. Vehicle — Vehicle Move, Vehicle Attack (crew, 22.7).
+
+**Building actions (§10.2):** every row that carries a Garrison-personnel
+requirement is attention-gated on those garrisoned units; the two **passive** rows
+that issue no order are **not** gated:
+
+| Building action | Attention-gated? | Units whose attention is spent |
+|---|---|---|
+| Harvest | **No** (passive base output, already applied §7.3/[D-010]; no order) | — |
+| Outpost · Hold Territory | **No** (passive maintenance; no order) | — |
+| Boost Output | Yes | surplus set's labor units (`2× labor min`) |
+| Emergency Extraction | Yes | labor-min units |
+| Research Sprint | Yes | `2×` Innovator (surplus set) |
+| Apply Research | Yes | Innovator-min units |
+| Amplify Credit Yield | Yes | `2` Administrator |
+| Colonist Processing | Yes | `1` Administrator |
+| Colonist Requisition | Yes | `1` Administrator / set |
+| Territorial Claim | Yes | `1` Administrator |
+| Command Coordination | Yes | `2` Administrator |
+| Resource Transfer | Yes | `2` Engineer |
+| Stockpile Audit | Yes | `2` Engineer |
+| Resource Routing | Yes | `2` Engineer |
+| Produce Vehicle | Yes | `3` Engineer |
+| Repair Vehicle | Yes | `2` Engineer |
+| Passive Intel Scan | Yes | `2` Analyst |
+| Enhanced Surveillance | Yes | `2` Analyst (+Sensor Array module) |
+| Broadcast | Yes | `1` Administrator (+Diplomatic Suite module) |
+| Market Sale | Yes | `1` Administrator / set |
+| Lockdown (`orders.ts`) | Yes | `1` labor/security garrison unit (+Security Detail module) |
+
+Characterization for the engine agent: **~19 of 21 building-action rows and 100% of
+unit actions are attention-gated; only Harvest and Hold Territory (both passive,
+order-less) are not.** Political and corporate actions are attention-neutral today
+(22.5). An attention-gated row's per-turn repeat count is now emergent — bounded by
+`floor(unspent garrisoned units of the required type / required count)` — which
+subsumes the old textual "1/set", "1/surplus set", "1/turn" limits (those remain the
+*upper* cap; attention can only lower the count when units are already spent).
+
+### 22.9 Building's currently-available action list ([D-061])
+
+The UI must show, per building, the set of actions **currently fully valid** — this
+**supersedes any standalone/global action list**. Nothing invalid is ever offered.
+```
+availableActions(B, S, turn):
+  candidate = base(B.type)                         // (a) intrinsic actions for the building type
+            ∪ garrisonUnlocked(B, S)               // (b) actions unlocked by units currently garrisoned in B
+            ∪ moduleUnlocked(B)                    // (c) actions unlocked by installed ACTIVE modules
+                                                   //     e.g. Lockdown←Security Detail, Enhanced
+                                                   //     Surveillance←Sensor Array, Broadcast←Diplomatic Suite
+  return { a ∈ candidate : isOffered(a, B, S, turn) }
+
+isOffered(a, B, S, turn):
+  return isOperational(B, turn)                      // §7/[D-012]  (exception: Produce Vehicle needs only the Workshop present, per validation.ts)
+     AND B.builtOnTurn < turn                        // built-this-turn cannot act [D-022]
+     AND selectAttentionUnits(...) != FAIL for every (type,count) group of a   // required units present WITH unspent attention (22.3)
+     AND garrisonSetCount / surplus-set predicate of a is met                  // §10.2 set gating
+     AND affordable(turnStartResources[S], cost(a))                            // Cr/resource cost
+     AND action-specific preconditions of a (building type, required module active, target validity)
+```
+- `base`, `garrisonUnlocked`, `moduleUnlocked` are the **union** sources; an action
+  from any source appears **only if** `isOffered` passes.
+- The list is **live**: because `selectAttentionUnits` reads
+  `attentionSpentThisTurn`, once a garrisoned unit is spent (by an earlier accepted
+  order this turn) any action that needed it **drops off** the building's list until
+  next turn — exactly requirement (2)/(3).
+- This derivation is the **same predicate** Phase 2 uses to accept/reject
+  (22.4); the offered list and the validator can never disagree.
+
+---
+
+*End of GAME_SPEC.md. Companion: DECISIONS.md (D-001 – D-061). Amend both together
 as later build phases surface gaps.*
