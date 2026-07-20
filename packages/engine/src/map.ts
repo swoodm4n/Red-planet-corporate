@@ -1,6 +1,8 @@
 /**
- * Map geometry. GAME_SPEC §9 / [D-026], [D-027].
- * Offset "odd-q" flat-top hexes, 12 columns (1..12) x 8 rows (1..8) = 96 hexes.
+ * Map geometry. GAME_SPEC §9 / §21.1-2, [D-026] (superseded), [D-027], [D-050].
+ * Square grid, 12 columns (1..12) x 8 rows (1..8) = 96 tiles. 8-directional
+ * (Moore) adjacency; Chebyshev distance. The `Hex`/`HexCoord` names are retained
+ * per [D-050] (read as "tile") to avoid churn; terrain is a straight reskin.
  */
 
 import type { Hex, HexCoord, Terrain } from "./types.js";
@@ -25,59 +27,40 @@ export function sameCoord(a: HexCoord, b: HexCoord): boolean {
   return a.col === b.col && a.row === b.row;
 }
 
-/** Neighbors of (c,r) per [D-026] odd-q flat-top. Excludes out-of-bounds. */
+/**
+ * 8-neighbour (Moore) set of (col,row) per §21.2 / [D-050]. Excludes out-of-bounds.
+ * All up-to-8 cells with Δcol,Δrow ∈ {-1,0,1} minus self.
+ * Reach delta vs old hex: distance-1 = 8 tiles (was 6); distance-2 = 24 (was 18).
+ */
 export function neighbors(c: HexCoord): HexCoord[] {
   const { col, row } = c;
-  const candidates: HexCoord[] =
-    col % 2 === 0
-      ? [
-          { col, row: row - 1 },
-          { col, row: row + 1 },
-          { col: col - 1, row: row - 1 },
-          { col: col - 1, row },
-          { col: col + 1, row: row - 1 },
-          { col: col + 1, row },
-        ]
-      : [
-          { col, row: row - 1 },
-          { col, row: row + 1 },
-          { col: col - 1, row },
-          { col: col - 1, row: row + 1 },
-          { col: col + 1, row },
-          { col: col + 1, row: row + 1 },
-        ];
+  const candidates: HexCoord[] = [];
+  for (let dc = -1; dc <= 1; dc++) {
+    for (let dr = -1; dr <= 1; dr++) {
+      if (dc === 0 && dr === 0) continue;
+      candidates.push({ col: col + dc, row: row + dr });
+    }
+  }
   return candidates.filter(inBounds);
 }
 
-interface Cube {
-  x: number;
-  y: number;
-  z: number;
+/**
+ * Chebyshev distance between two tiles. §21.2 / [D-050]. Replaces the old cube
+ * `hexDistance`. Vehicle ranges (2/4), Patrol/Enforce/Vehicle-Attack range ≤1,
+ * survey/intel radii all read the same numbers against this metric.
+ */
+export function gridDistance(a: HexCoord, b: HexCoord): number {
+  return Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row));
 }
 
 /**
- * Convert odd-q offset to cube coordinates. §9.2 / [D-026].
- * Uses 1-indexed col/row directly so column parity matches the D-026 neighbor
- * definition (the absolute offset cancels out in distance differences).
+ * @deprecated Kept as an alias of {@link gridDistance} to avoid churn in callers
+ * that still say `hexDistance`. Under §21 the metric is Chebyshev, not cube. [D-050]
  */
-function offsetToCube(c: HexCoord): Cube {
-  const col = c.col;
-  const row = c.row;
-  const x = col;
-  const z = row - (col - (col & 1)) / 2;
-  const y = -x - z;
-  return { x, y, z };
-}
-
-/** Hex/cube distance between two coords. §9.2 */
-export function hexDistance(a: HexCoord, b: HexCoord): number {
-  const ca = offsetToCube(a);
-  const cb = offsetToCube(b);
-  return Math.max(Math.abs(ca.x - cb.x), Math.abs(ca.y - cb.y), Math.abs(ca.z - cb.z));
-}
+export const hexDistance = gridDistance;
 
 export function isAdjacent(a: HexCoord, b: HexCoord): boolean {
-  return neighbors(a).some((n) => sameCoord(n, b));
+  return gridDistance(a, b) === 1;
 }
 
 /** Move cost onto a terrain. §9.1. Mountains/Rare Minerals consume the whole move. */
