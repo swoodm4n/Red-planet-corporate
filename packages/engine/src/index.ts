@@ -115,6 +115,7 @@ export type { ConflictInput, ConflictResult } from "./conflict.js";
 // Map utilities.
 export {
   neighbors,
+  gridDistance,
   hexDistance,
   isAdjacent,
   makeDefaultMap,
@@ -122,6 +123,36 @@ export {
   MAP_COLS,
   MAP_ROWS,
 } from "./map.js";
+
+// Intelligence-gated visibility (§21 / [D-050]–[D-055]).
+export {
+  computeEspionage,
+  computeOpsec,
+  computeIntelTier,
+  intelTierFrom,
+  getGatedTileView,
+  getMapView,
+  INTEL_ESPIONAGE_BASE,
+  INTEL_OPSEC_BASE,
+  INTEL_W_ANALYST,
+  INTEL_W_SENSOR_ARRAY,
+  INTEL_W_COMMS_ARRAY,
+  INTEL_W_COMMAND_SUITE,
+  INTEL_W_CONTRACTOR,
+  INTEL_W_SECURITY_DETAIL,
+  INTEL_W_FORTIFICATION,
+  INTEL_TIER_LOW_MAX,
+  INTEL_TIER_MEDIUM_MAX,
+  INTEL_TIER_HIGH_MAX,
+} from "./intel.js";
+export type {
+  IntelTier,
+  TileViewTier,
+  TileView,
+  TileViewBuildingDetail,
+  TileViewUnits,
+  MapTileMarker,
+} from "./intel.js";
 
 // Constants (read-only data tables the backend seeds UIs from).
 export {

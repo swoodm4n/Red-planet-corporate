@@ -836,16 +836,49 @@ explicit intel tier removes the previously-silent overlap between §18's implici
 border-hiding and the new mechanic, leaving one authoritative gate for "what can I see"
 and one for "did my intruder get caught."
 
+### D-055 — Tile-view edge cases the spec left implicit (unclaimed/off-map/RETIRED, output keying)
+*Source: game-engine agent, implementing §21.6 `getGatedTileView`. §21 is fully
+worked out for owned/opponent tiles but silent on a few boundary cases the pure
+function must still return a value for. Smallest sensible rulings, per the
+build directive.*
+**Ruling:**
+- **Unclaimed tiles** (`hex.ownerSubdivisionId == null`) return only the public
+  fields (`terrain`, `owner=null`, `isLandingZone`, `hasHQ=false`, `hasOutpost=false`)
+  with `intelTier = "LOW"`. There is no opponent to derive a tier from and no
+  private content exists, so LOW (reveals nothing private) is the truthful floor.
+- **RETIRED-owner tiles** are treated as unclaimed here (per [D-032] a RETIRED sub's
+  hexes unclaim and buildings go derelict, so in practice `owner` is already null;
+  the guard is defensive).
+- **Off-map coords** (`getHex` miss) return `null` — the caller passed a coordinate
+  outside the 12×8 bounds.
+- **`resourceOutput` keying (FULL/OWN):** the per-tile output map sums each standing
+  building's Phase-3 passive output (§7.3/[D-040]) under its primary `ResourceType`,
+  and additionally folds any Research-Link module bonus into `RESEARCH` (it is
+  genuine per-turn research capacity). Stockpiles (`CREDITS`/resource pools) are
+  never included — §18 keeps those private.
+- **Map-level projection.** A distinct `getMapView(viewer, game)` returns one
+  public `MapTileMarker` per tile (terrain/owner/HQ/Outpost icons + tier) and never
+  carries building lists, counts, or outputs — enforcing the §21.5 "only HQ/Outpost
+  render at the map level" split. Full building detail is only ever delivered by
+  `getGatedTileView` on tile inspection.
+**Reasoning:** Each case is forced by the pure-function contract (it must return a
+typed `TileView`/`null` for every input). LOW-for-unclaimed avoids inventing a new
+enum value beyond the spec's `"OWN"|LOW|MEDIUM|HIGH|FULL` while never leaking
+anything; folding Research-Link into RESEARCH keeps `resourceOutput` a faithful
+"per-turn productive capacity" picture without exposing stockpiles.
+
 ---
 
 ## Decision categories at a glance
 
-The 54 decisions group into nine categories A–I, numbered sequentially with no
+The 55 decisions group into nine categories A–I, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
 ambiguity; H by the **backend** agent for server-only concerns; I by the
-**spec-analyst** again for the player-requested intelligence-gated visibility /
-square-map extension. All are binding on downstream code.
+**spec-analyst** for the player-requested intelligence-gated visibility /
+square-map extension (D-050–D-054), with D-055 added by the **game-engine** agent
+for tile-view edge cases surfaced while implementing §21.6. All are binding on
+downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
 |---|---|---|---|
@@ -857,7 +890,7 @@ square-map extension. All are binding on downstream code.
 | **F** | Scoring & Misc | D-034 – D-037 | Oxygen/tech-tree/freeform-research inert + admin-stamped (D-034); scoring counters, normalization off by default (D-035); HQ +1 action (D-036); action-economy limits (D-037) |
 | **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
-| **I** | Intel Visibility & Square Map | D-050 – D-054 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054) |
+| **I** | Intel Visibility & Square Map | D-050 – D-055 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054); tile-view edge cases — unclaimed/off-map/RETIRED, output keying, map-level split (D-055) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -869,5 +902,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-054). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-055). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
