@@ -92,6 +92,20 @@ async function setViewerAnalysts(subId: number, n: number): Promise<void> {
   for (let i = 0; i < n; i++) {
     sub.personnel.push({ id: 900000 + i, type: "ANALYST", status: "AVAILABLE", unavailableUntilTurn: 0 });
   }
+  // Pin the TARGET's opsec sources too, so the tier math below is a deterministic
+  // function of `n` alone, independent of any incidental prior state the shared
+  // dev DB has accumulated (turns resolved by other test files/agents can add or
+  // remove Contractors/SECURITY_DETAIL/FORTIFICATION on the target). Exactly one
+  // Contractor + no opsec modules => opsec = INTEL_OPSEC_BASE(1) + 1 = 2, matching
+  // the "fresh seed" assumption the tier-boundary comment above documents.
+  const target = game.subdivisions.find((s) => s.id !== subId && s.id === 3);
+  if (target) {
+    target.personnel = target.personnel.filter((p) => p.type !== "CONTRACTOR");
+    target.personnel.push({ id: 900100, type: "CONTRACTOR", status: "AVAILABLE", unavailableUntilTurn: 0 });
+    for (const b of target.buildings) {
+      b.modules = b.modules.filter((m) => m.type !== "SECURITY_DETAIL" && m.type !== "FORTIFICATION");
+    }
+  }
   await prisma.game.update({
     where: { id: GAME_ID },
     data: { stateJson: serializeGame(game) as Prisma.InputJsonValue },
