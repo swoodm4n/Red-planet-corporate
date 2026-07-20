@@ -80,7 +80,9 @@ status (400/401/403/404/409/500). Auth via the `rpc_session` cookie (set by logi
 | Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/api/games` | any | list games + `yourSubdivisionId` |
-| GET | `/api/games/:gameId/dashboard` | approved | public standings/market/equity/map + announcements + colony events |
+| GET | `/api/games/:gameId/dashboard` | approved | public standings/market/equity/map + announcements + colony events. NOTE: `dashboard.map` is a legacy public projection (terrain + `ownerSubdivisionId` only, no icons/tier). For the map screen use the intel-gated `/map` endpoint below instead. |
+| GET | `/api/games/:gameId/map` | **owner** (admin: view-as) | intel-gated map-level markers, viewer = caller's own subdivision (server-derived) — see §21 map contract below |
+| GET | `/api/games/:gameId/map/tiles/:col/:row` | **owner** (admin: full) | tier-gated single-tile inspection — see §21 map contract below |
 | GET | `/api/games/:gameId/market` | approved | live dynamic-market prices + standings |
 | GET | `/api/games/:gameId/equity` | approved | share prices + ownership ledger |
 | GET | `/api/games/:gameId/report` | **owner** | full PRIVATE report for the caller's own subdivision + public view of others (§18/§20) |
@@ -98,6 +100,74 @@ engine `Submission` sub-types (`@rpc/engine`): `BuildingActionOrder`,
 `UnitActionOrder`, `PoliticalActionOrder`, `CorporateActionOrder`,
 `GarrisonAssignment`. Invalid orders come back as engine `InvalidOrder`s
 (`{kind,reason,order}`).
+
+#### Intel-gated map contract (§21 / [D-050]–[D-055])
+
+The map screen renders in two layers. The **map layer** (`GET …/map`) draws icons +
+a tier badge per tile; the **tile-inspection layer** (`GET …/map/tiles/:col/:row`)
+is fetched on click and returns tier-appropriate detail. The grid is a **12×8
+square grid** (`col` 1..12, `row` 1..8), **8-directional / Chebyshev** distance
+(no odd-q parity, no 6-neighbour hex geometry — those assumptions are stale).
+
+**Who the viewer is:** always resolved server-side from the session. A player is
+always their own assigned subdivision; the client cannot pass a viewer id or a
+"desired tier". Any such query params are ignored. Admins may pass
+`?viewerSubdivisionId=N` to view-as-N; omitting it gives the full admin view.
+
+`GET /api/games/:gameId/map` → `200`:
+```jsonc
+{
+  "gameId": 1,
+  "turnNumber": 3,
+  "cols": 12,
+  "rows": 8,
+  "viewerSubdivisionId": 1,   // the caller's subdivision; null for the full admin map
+  "tiles": [ /* 96 MapTileMarker, row-major */ ]
+}
+```
+Each `MapTileMarker` carries ONLY public map data + the server-computed tier — never
+building lists, counts, or outputs (those live on tile inspection):
+```jsonc
+{
+  "coord": { "col": 6, "row": 2 },
+  "terrain": "PLAINS",          // PLAINS | MOUNTAINS | RARE_MINERALS | IMPASSABLE | LANDING_ZONE
+  "owner": 3,                    // owning subdivision id, or null (unclaimed / retired owner)
+  "isLandingZone": false,
+  "hasHQ": true,                 // HQ icon (public)
+  "hasOutpost": false,           // Outpost icon (public)
+  "intelTier": "MEDIUM"          // "OWN" (self) | "LOW" | "MEDIUM" | "HIGH" | "FULL" (vs owner)
+}
+```
+
+`GET /api/games/:gameId/map/tiles/:col/:row` → `200`:
+```jsonc
+{ "gameId": 1, "turnNumber": 3, "viewerSubdivisionId": 1, "tile": { /* TileView */ } }
+```
+`viewerSubdivisionId` is `null` for admin (admin gets full detail, not a per-viewer
+tier). Off-map coords → `404`. `col`/`row` non-integers → `400`.
+
+The `tile` (`TileView`) shape is **additive by tier** — the frontend must render
+conditionally on `intelTier` and on field presence. Public fields are always present:
+`coord`, `terrain`, `owner`, `isLandingZone`, `hasHQ`, `hasOutpost`, `intelTier`.
+Gated fields are added as the tier rises:
+
+| `intelTier` | Added fields (on top of public) |
+|---|---|
+| `LOW` | *(none — public fields only)* |
+| `MEDIUM` | `buildingCount:number` |
+| `HIGH` | `+ buildings: BuildingType[]` (id-ordered, duplicates listed) `+ unitCount:number` |
+| `FULL` | `+ resourceOutput: Partial<Record<ResourceType,number>>` (per-turn capacity, NOT stockpiles) `+ units: { personnel: Partial<Record<PersonnelType,number>>, vehicles: Partial<Record<HullClass,number>> }` |
+| `OWN` | full detail: `buildingCount`, `buildings`, `unitCount`, `resourceOutput`, `units`, **plus** `ownBuildings: { id, type, tier, status, modules: {id,type,status}[], garrison: Partial<Record<PersonnelType,number>> }[]` |
+
+Notes for the frontend:
+- `OWN` is returned for the caller's own tiles **and** for admin on any owned tile.
+  It is the only tier that includes `ownBuildings` (per-building modules/garrison).
+- No tier ever exposes personnel identity or vehicle loadouts — `units`/`unitCount`
+  are aggregate counts only.
+- Unclaimed or retired-owner tiles report `owner: null`, `intelTier: "LOW"`, and no
+  gated fields (there is no private content to reveal).
+- Tier is recomputed live every request from current espionage/opsec; a tile's shape
+  can therefore change turn-to-turn. Never cache a shape across turns.
 
 ### Admin (`role === ADMIN`)
 | Method | Path | Notes |
