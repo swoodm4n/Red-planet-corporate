@@ -991,11 +991,55 @@ guarantees nothing invalid is ever offered and the two can never drift; making r
 counts emergent from attention folds the scattered per-action limit text into one
 authoritative mechanism.
 
+### D-062 — `attentionSpentThisTurn` is an optional field; absent === unspent
+*Source: implementation of §22.1; existing `Personnel` constructors across engine
+and tests omit the new field.*
+**Ruling:** `Personnel.attentionSpentThisTurn` is typed **optional** (`boolean?`).
+Semantically an absent/`undefined` value is **false** (unspent) everywhere it is
+read (`selectAttentionUnits`, `selectActorAttention`); the check is `x !== true`.
+The engine nonetheless **writes it explicitly** at every creation site it owns
+(starting roster in `state.ts`, colonist requisition in `phase4.ts`) and resets it
+to `false` for every unit (including `capturedUnits`) in Phase 8 step 5c, so a
+resolved snapshot always carries the field. It is deep-cloned like any other field.
+**Reasoning:** Optional typing avoids touching the many existing `Personnel` object
+literals (engine + 136 pre-existing tests) while preserving the D-056 semantics; the
+engine still persists it authoritatively so the backend snapshot is never ambiguous.
+
+### D-063 — Per-action attention requirement mapping, gate ordering, and availableActions scope
+*Source: implementation of §22.8/22.9; the §22.8 table names units in prose that must
+be turned into concrete (type,count) groups over the engine's implemented action set.*
+**Ruling:** Attention requirements per implemented building action (groups over the
+building's own garrison): **Boost Output** = 2× labor min per labor type; **Emergency
+Extraction** = 1× labor min; **Research Sprint** = 2× Innovator min; **Market Sale /
+Colonist Requisition / Territorial Claim** = 1 Administrator; **Amplify Credit Yield**
+= 2 Administrator; **Resource Transfer** = 2 Engineer; **Produce Vehicle** = 3
+Engineer; **Passive Intel Scan** = 2 Analyst; **Lockdown** = 1 Contractor (the
+Security-Detail garrison). Counts derive from `laborGarrisonMin` so they track
+Automation. Unit actions require the actor `unitId` (count 1); vehicle actions require
+the whole `crew`. The attention check is appended as the **final** gate in Phase 2 —
+after every existing precondition (operational, building-type, surplus-set, cost,
+target) — so pre-existing reject **reasons** (e.g. "requires HQ", "surplus garrison
+set", "not operational", "requires Transit Hub") are preserved and take precedence
+over `insufficient unspent attention`. `availableActions(building, sub, game)` is a
+**building-level** query: it applies the shared structural predicate (operational,
+built-this-turn, surplus/module set gating, attention on live `attentionSpentThisTurn`
+flags) but intentionally omits per-order **param** validation (quantity>0, valid hull,
+specific target validity) and **variable-cost** affordability (Market Sale / Colonist
+Requisition / Produce Vehicle / Lockdown costs depend on params or are charged at
+execution) — those remain Phase-2/Phase-4 concerns. `garrisonUnlocked()` is currently
+empty (this engine has no garrison-unlocked-only building actions); it is kept as an
+explicit union member so future rows slot in without changing the query.
+**Reasoning:** Deriving counts from the labor min keeps them consistent with the
+existing garrison machinery; appending attention last keeps all existing
+validation-reason tests green; scoping `availableActions` to structural + attention
+gates (not order params) matches what a per-building UI can meaningfully answer while
+still sharing the one attention predicate with the validator ([D-061]).
+
 ---
 
 ## Decision categories at a glance
 
-The 61 decisions group into ten categories A–J, numbered sequentially with no
+The 63 decisions group into ten categories A–J, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
 ambiguity; H by the **backend** agent for server-only concerns; I by the
@@ -1003,7 +1047,9 @@ ambiguity; H by the **backend** agent for server-only concerns; I by the
 square-map extension (D-050–D-054), with D-055 added by the **game-engine** agent
 for tile-view edge cases surfaced while implementing §21.6; J by the
 **spec-analyst** for the player-requested unit-attention action-economy extension
-(D-056–D-061). All are binding on downstream code.
+(D-056–D-061), with D-062–D-063 added by the **game-engine** agent for
+implementation-level rulings surfaced while building §22. All are binding on
+downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
 |---|---|---|---|
@@ -1016,7 +1062,7 @@ for tile-view edge cases surfaced while implementing §21.6; J by the
 | **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
 | **I** | Intel Visibility & Square Map | D-050 – D-055 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054); tile-view edge cases — unclaimed/off-map/RETIRED, output keying, map-level split (D-055) |
-| **J** | Unit Attention & Action Availability | D-056 – D-061 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061) |
+| **J** | Unit Attention & Action Availability | D-056 – D-063 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -1028,5 +1074,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-061). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-063). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
