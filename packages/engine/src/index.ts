@@ -193,3 +193,8 @@ export type { AttentionGroup } from "./attention.js";
 
 // Cloning (deterministic deep copy incl. bigint/Set).
 export { cloneGame, deepClone } from "./clone.js";
+
+// Phase-1 garrison application (single-subdivision), reused for the composer's
+// available-actions preview so draft re-garrisoning is reflected before per-building
+// actions are evaluated (§22.9 / [D-065]).
+export { applyGarrisonForSubdivision } from "./phases/garrison.js";
