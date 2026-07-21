@@ -1,0 +1,15 @@
+{
+  "name": "red-planet-corporate",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Red Planet Corporate (Mars Colonial Initiative) — deterministic PBEM game.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  }
+}
