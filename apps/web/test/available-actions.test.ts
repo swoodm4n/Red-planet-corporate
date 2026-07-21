@@ -302,3 +302,69 @@ describe("(b) draft orders tentatively spend attention -> actions drop off", () 
     );
   });
 });
+
+describe("(e) draft garrison is applied (Phase 1) before per-building actions [D-065]", () => {
+  // The full intended garrison the composer would send: identical to the installed
+  // scenario, EXCEPT plainAdminA is moved out of B_HQ_PLAIN into the understaffed
+  // COMMERCIAL_HUB, bringing it from 1 -> 2 Administrators (its labor min).
+  function garrisonTo(buildingId: number, unitId: number) {
+    return { unitId, target: { kind: "BUILDING", buildingId } };
+  }
+  const regarrisonHub = [
+    garrisonTo(B_COMMERCIAL, P.hubAdminA),
+    garrisonTo(B_COMMERCIAL, P.hubAdminB),
+    garrisonTo(B_HQ_SECURED, P.hqAdminA),
+    garrisonTo(B_HQ_SECURED, P.hqAdminB),
+    garrisonTo(B_HQ_SECURED, P.hqContractor),
+    garrisonTo(B_UNDERSTAFFED, P.underAdmin),
+    garrisonTo(B_UNDERSTAFFED, P.plainAdminA), // moved in -> Hub now operational
+    garrisonTo(B_HQ_PLAIN, P.plainAdminB),
+    garrisonTo(B_HQ_PLAIN, P.plainContractor),
+  ];
+
+  it("baseline (no garrison draft): understaffed Hub is not operational -> []", async () => {
+    const res = await fetchAvailable(playerCookie);
+    const body = await res.json();
+    expect(body.buildings[B_UNDERSTAFFED]).toEqual([]);
+  });
+
+  it("re-garrisoning a 2nd Admin into the Hub makes it operational live -> AMPLIFY offered", async () => {
+    const res = await fetchAvailable(playerCookie, { garrison: regarrisonHub });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // The NEW garrison (2 Admins) is reflected: the Hub now offers its Admin action,
+    // rather than the empty set its last-turn (1-Admin) garrison produced.
+    expect(body.buildings[B_UNDERSTAFFED]).toContain("AMPLIFY_CREDIT_YIELD");
+    // And the mirror consequence: B_HQ_PLAIN dropped to 1 Admin (below HQ min 2 Admin
+    // + 1 Contractor) so it is now non-operational -> offers nothing.
+    expect(body.buildings[B_HQ_PLAIN]).toEqual([]);
+    // Buildings whose garrison the draft preserved are unchanged.
+    expect(body.buildings[B_COMMERCIAL]).toContain("AMPLIFY_CREDIT_YIELD");
+    expect(body.buildings[B_HQ_SECURED]).toContain("LOCKDOWN");
+  });
+
+  it("draft garrison composes with attention: acting the Hub then spends the moved Admins", async () => {
+    const res = await fetchAvailable(playerCookie, {
+      garrison: regarrisonHub,
+      buildingActions: [{ buildingId: B_UNDERSTAFFED, action: "AMPLIFY_CREDIT_YIELD" }],
+    });
+    const body = await res.json();
+    // AMPLIFY needs both Admins now garrisoned in the Hub; spending them removes it.
+    expect(body.buildings[B_UNDERSTAFFED]).not.toContain("AMPLIFY_CREDIT_YIELD");
+    expect(body.unitAttention[P.underAdmin]).toBe(true);
+    expect(body.unitAttention[P.plainAdminA]).toBe(true);
+  });
+
+  it("best-effort: an invalid garrison entry is skipped, not fatal (still 200)", async () => {
+    const withBad = [
+      ...regarrisonHub,
+      garrisonTo(B_UNDERSTAFFED, 987654321), // no such unit -> skipped
+      { unitId: P.hubAdminA, target: { kind: "BUILDING", buildingId: 987654321 } }, // no such building -> skipped
+    ];
+    const res = await fetchAvailable(playerCookie, { garrison: withBad });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // Valid entries still applied: Hub operational from the two real Admins.
+    expect(body.buildings[B_UNDERSTAFFED]).toContain("AMPLIFY_CREDIT_YIELD");
+  });
+});
