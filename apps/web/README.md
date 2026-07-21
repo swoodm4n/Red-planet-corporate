@@ -174,9 +174,11 @@ Notes for the frontend:
 
 The orders composer must never guess whether an action is valid client-side — the
 engine's `availableActions(building, sub, game)` ([D-061]) is the single source of
-truth. This endpoint runs it per building **and** applies the tentative attention
-spend of the orders the player has queued but not yet submitted, so the offered set
-and the ASSIGNED/AVAILABLE unit badges update live as they compose.
+truth. This endpoint runs it per building **and** (a) applies the draft's garrison exactly
+as Phase 1 would — reset-then-assign, before per-building actions are evaluated
+([D-065]) — then (b) applies the tentative attention spend of the orders the player
+has queued but not yet submitted, so the offered set and the ASSIGNED/AVAILABLE unit
+badges update live as they compose.
 
 **Who the viewer is:** always the caller's own assigned subdivision, resolved
 server-side from the session (`requireOwnedSubdivision`). There is no way to pass a
@@ -191,10 +193,15 @@ state):
 ```jsonc
 {
   "draftOrders": {
+    "garrison":        [ /* GarrisonAssignment[] — engine shape */ ],
     "buildingActions": [ /* BuildingActionOrder[] — engine shape */ ],
     "unitActions":     [ /* UnitActionOrder[] — engine shape */ ]
-    // garrison / politicalAction / corporateActions are accepted but ignored here:
-    // they spend no unit attention ([D-058]/[D-059]).
+    // politicalAction / corporateActions are accepted but ignored here: they spend no
+    // unit attention and change nothing this endpoint reports ([D-058]/[D-059]).
+    // garrison spends no attention either, but IS applied (Phase 1, reset-then-assign)
+    // before the per-building action lists are derived, so a building the player
+    // re-garrisons in the draft shows its NEW garrison's actions live, not last
+    // turn's ([D-065]). Omit `garrison` to keep the turn-start garrison unchanged.
   }
 }
 ```
@@ -224,13 +231,22 @@ Semantics the frontend can rely on:
   does **not** validate per-order params (quantities, targets, hulls) or variable
   costs (Market Sale / Colonist Requisition / Produce Vehicle / Lockdown) — those
   remain the job of `POST …/orders/validate` and turn resolution ([D-063]).
-- The set is **live under the draft**: draft `buildingActions`/`unitActions` are
-  walked in declaration order (building actions before unit actions, matching Phase
-  2's `claimed` reservation, §22.4) and tentatively mark the units they'd commit as
-  attention-spent via the engine's canonical lowest-id selection ([D-057]). So once a
-  draft order commits a required unit, any action needing that same unit **drops off**
-  the building's list — exactly what will happen at resolution. A queued action that
-  is not actually offered (non-operational building, etc.) spends nothing.
+- The set is **live under the draft's garrison**: if the draft carries a `garrison`
+  list it is applied first (Phase 1, reset-then-assign via the engine's own
+  `applyGarrisonForSubdivision`, §10.1) so each building's `garrisonUnlocked` actions,
+  operational status, and set-count gating reflect the NEW garrison the player is
+  composing — matching resolution, where garrison (Phase 1) precedes building actions
+  (Phase 4). Invalid garrison entries (missing/ineligible unit, missing/DERELICT
+  target, duplicate unit) are skipped best-effort (that unit stays AVAILABLE); one bad
+  entry never fails the request. Omit `garrison` to keep the turn-start garrison.
+- The set is also **live under the draft's attention**: draft
+  `buildingActions`/`unitActions` are walked in declaration order (building actions
+  before unit actions, matching Phase 2's `claimed` reservation, §22.4) and tentatively
+  mark the units they'd commit as attention-spent via the engine's canonical lowest-id
+  selection ([D-057]). So once a draft order commits a required unit, any action needing
+  that same unit **drops off** the building's list — exactly what will happen at
+  resolution. A queued action that is not actually offered (non-operational building,
+  etc.) spends nothing.
 - `unitAttention[personnelId]` is the authoritative value for the ASSIGNED/AVAILABLE
   badge (`true` = spent = ASSIGNED, `false`/absent = unspent = AVAILABLE). Every unit
   in the caller's subdivision is keyed. This is the server value the badge should read

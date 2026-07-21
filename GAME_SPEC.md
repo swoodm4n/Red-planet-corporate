@@ -1328,6 +1328,13 @@ isOffered(a, B, S, turn):
   next turn — exactly requirement (2)/(3).
 - This derivation is the **same predicate** Phase 2 uses to accept/reject
   (22.4); the offered list and the validator can never disagree.
+- **Garrison ordering in a live preview ([D-065]):** because garrison is applied in
+  Phase 1 and building actions run in Phase 4, a preview of `availableActions` for a
+  draft submission MUST apply that draft's garrison (§10.1, reset-then-assign) to the
+  evaluated state **first**, then derive per-building actions against the resulting
+  garrison. Otherwise a building the player re-garrisons this turn would still show
+  last turn's `garrisonUnlocked`/operational/set-count gating — misleading, since at
+  resolution the new garrison is already in place before those actions run.
 
 ---
 

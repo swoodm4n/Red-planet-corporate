@@ -1060,11 +1060,41 @@ keeping persisted state untouched; exporting the existing helpers is a pure
 API-surface widening (no logic moved or copied), the minimal change that lets the
 backend show the live "spent → drops off" behaviour the composer needs.
 
+### D-065 — Available-actions preview applies the draft's garrison (Phase 1) before deriving per-building actions
+*Source: gap in D-064's available-actions endpoint — it evaluated `availableActions`
+against the clone's turn-start (last-turn) garrison and ignored the `garrison`
+reassignments in the draft the player is composing. Since garrison resolves in Phase 1
+and building actions in Phase 4, a building re-garrisoned in the current draft showed
+stale (last-turn) `garrisonUnlocked`/operational/set-count gating until after submit.*
+**Ruling:** `computeAvailableActions` now applies the draft's `garrison` list to the
+cloned subdivision **first** — before the tentative attention spend and the per-building
+`availableActions` calls — mirroring resolution order (Phase 1 garrison → Phase 4
+building actions). It reuses the engine's real Phase-1 applier: `garrison.ts`'s
+per-subdivision reset-then-assign logic was extracted into
+**`applyGarrisonForSubdivision(sub, assignments, turnNumber)`** (the full-pipeline
+`applyGarrison` now delegates to it, so there is one application implementation) and
+exported from `index.ts`. Application is **best-effort/atomic-drop** exactly like
+Phase 2 dropping an INVALID garrison order ([D-021]): an entry naming a
+missing/CAPTURED/LOST/UNHOUSED/unavailable unit, a missing/DERELICT building, a
+missing/DESTROYED vehicle, or a unit already placed by an earlier entry is **skipped**
+(that unit falls to AVAILABLE); one bad entry never crashes the preview-only endpoint.
+Garrison is applied only when the draft carries a `garrison` list; omitting it keeps the
+turn-start garrison. This supersedes D-064's "garrison … accepted but ignored" clause
+for the garrison field specifically (garrison still spends **no** attention, [D-058];
+it is applied for its *garrison-membership* effect, not any attention effect).
+**Reasoning:** The preview's whole contract ([D-061]) is that the offered list equals
+what resolution would accept; ignoring draft garrison broke that for any turn the player
+re-garrisons. Extracting the existing applier (rather than reimplementing a simplified
+garrison in the server layer) keeps the engine the single source of the rule and is a
+pure refactor + API-surface widening — `applyGarrison`'s behaviour is unchanged.
+Best-effort skipping suits a preview-only, nothing-persisted endpoint: partial accuracy
+beats a hard failure when a half-composed draft has one invalid entry.
+
 ---
 
 ## Decision categories at a glance
 
-The 64 decisions group into ten categories A–J, numbered sequentially with no
+The 65 decisions group into ten categories A–J, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
 ambiguity; H by the **backend** agent for server-only concerns; I by the
@@ -1073,9 +1103,9 @@ square-map extension (D-050–D-054), with D-055 added by the **game-engine** ag
 for tile-view edge cases surfaced while implementing §21.6; J by the
 **spec-analyst** for the player-requested unit-attention action-economy extension
 (D-056–D-061), with D-062–D-063 added by the **game-engine** agent for
-implementation-level rulings surfaced while building §22, and D-064 by the
-**backend** agent for the draft-aware available-actions endpoint. All are binding on
-downstream code.
+implementation-level rulings surfaced while building §22, and D-064–D-065 by the
+**backend** agent for the draft-aware available-actions endpoint (D-064) and its
+draft-garrison fix (D-065). All are binding on downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
 |---|---|---|---|
@@ -1088,7 +1118,7 @@ downstream code.
 | **G** | Engine Implementation | D-038 – D-042 | activation/retirement before validation (D-038); production before attrition (D-039); persistent module bonuses in Phase 3 (D-040); Vitest + workspace layout (D-041); durational effects, Redundant-Systems floor, equity/vehicle/political wiring (D-042) |
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
 | **I** | Intel Visibility & Square Map | D-050 – D-055 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054); tile-view edge cases — unclaimed/off-map/RETIRED, output keying, map-level split (D-055) |
-| **J** | Unit Attention & Action Availability | D-056 – D-064 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063); draft-aware available-actions endpoint reusing the engine predicate + widened attention exports (D-064) |
+| **J** | Unit Attention & Action Availability | D-056 – D-064 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063); draft-aware available-actions endpoint reusing the engine predicate + widened attention exports (D-064); available-actions preview applies the draft's garrison (Phase 1) before deriving per-building actions, via extracted `applyGarrisonForSubdivision` (D-065) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -1100,5 +1130,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-064). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-065). Append new decisions as later phases surface
 gaps; never renumber existing entries.*
