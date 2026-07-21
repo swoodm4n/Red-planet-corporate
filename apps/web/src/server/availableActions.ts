@@ -15,7 +15,9 @@ import {
   type BuildingActionOrder,
   type BuildingActionType,
   type Game,
+  type GarrisonAssignment,
   type UnitActionOrder,
+  applyGarrisonForSubdivision,
   availableActions,
   buildingActionOffered,
   cloneGame,
@@ -25,11 +27,21 @@ import {
 } from "@rpc/engine";
 
 /**
- * The subset of a draft `Submission` that affects attention availability. Garrison
- * assignments, political and corporate actions spend no attention ([D-058]/[D-059])
- * and are ignored here; only building + unit actions commit unit attention.
+ * The subset of a draft `Submission` this preview interprets. Political and corporate
+ * actions spend no attention ([D-058]/[D-059]) and are ignored. Garrison assignments
+ * spend no attention either, but they *do* change which units are garrisoned in each
+ * building — and because garrison is applied in Phase 1, before building actions run
+ * in Phase 4 at resolution, the draft's garrison must be applied to the preview state
+ * first so a re-garrisoned building's action list is accurate to what would really
+ * happen ([D-065]). Building + unit actions then commit unit attention.
  */
 export interface DraftOrders {
+  /**
+   * Full intended garrison for the caller's subdivision. When present, it is applied
+   * exactly as Phase 1 would (reset-then-assign, §10.1) *before* per-building actions
+   * are evaluated. When absent, the turn-start garrison is used unchanged.
+   */
+  garrison?: GarrisonAssignment[];
   buildingActions?: BuildingActionOrder[];
   unitActions?: UnitActionOrder[];
 }
@@ -70,6 +82,18 @@ export function computeAvailableActions(
   }
   const turnNumber = clone.turnNumber;
   const noClaim: ReadonlySet<number> = new Set();
+
+  // §10.1/§16 Phase 1: apply the draft's garrison BEFORE evaluating building actions
+  // (Phase 4). This mirrors resolution — garrison is set first, so a building the
+  // player re-garrisons in the draft is seen with its NEW garrison here, not last
+  // turn's. Applied only when the draft carries a garrison list; otherwise the
+  // turn-start garrison stands. Reuses the engine's own Phase-1 applier (best-effort:
+  // invalid entries are skipped, leaving that unit AVAILABLE — never crashing the
+  // preview). Garrison spends no attention ([D-058]), so this precedes the attention
+  // spend below without affecting `attentionSpentThisTurn`. [D-065]
+  if (draft.garrison) {
+    applyGarrisonForSubdivision(sub, draft.garrison, turnNumber);
+  }
 
   for (const a of draft.buildingActions ?? []) {
     const b = sub.buildings.find((x) => x.id === a.buildingId);

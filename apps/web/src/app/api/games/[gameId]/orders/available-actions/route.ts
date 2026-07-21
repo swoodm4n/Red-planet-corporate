@@ -1,4 +1,4 @@
-import type { BuildingActionOrder, UnitActionOrder } from "@rpc/engine";
+import type { BuildingActionOrder, GarrisonAssignment, UnitActionOrder } from "@rpc/engine";
 import { handle, json, readJson, errors } from "@/lib/http";
 import { requireOwnedSubdivision } from "@/lib/authz";
 import { loadGame } from "@/server/gameStore";
@@ -25,6 +25,9 @@ export const POST = handle(async (req, ctx) => {
   const draft = body.draftOrders ?? {};
 
   const result = computeAvailableActions(game, subdivisionId, {
+    // Garrison is applied first (Phase 1) so re-garrisoned buildings show their live
+    // action set; only present when the draft carries a garrison list. [D-065]
+    garrison: draft.garrison as GarrisonAssignment[] | undefined,
     buildingActions: (draft.buildingActions ?? []) as BuildingActionOrder[],
     unitActions: (draft.unitActions ?? []) as UnitActionOrder[],
   });
