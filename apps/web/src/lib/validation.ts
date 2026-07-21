@@ -63,6 +63,19 @@ export const announcementSchema = z.object({
   body: z.string().min(1).max(8000),
 });
 
+// Subdivision comms message (tactical HUD composer). [D-066] The recipient is a
+// discriminated union; subdivisionId/turn/sender are always server-derived and are
+// never accepted from the client. `body` is capped but NOT filtered/rate-limited
+// (game feature, not a public chat product — per brief).
+export const messageSchema = z.object({
+  recipient: z.discriminatedUnion("type", [
+    z.object({ type: z.literal("PUBLIC") }),
+    z.object({ type: z.literal("SUBDIVISION"), subdivisionId: z.number().int().positive() }),
+    z.object({ type: z.literal("ADMIN") }),
+  ]),
+  body: z.string().min(1).max(4000),
+});
+
 export const configSchema = z.object({
   turnLengthHours: z.number().int().min(1).max(24 * 30).optional(),
 });

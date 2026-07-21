@@ -55,6 +55,7 @@ model User {
   proposals    ResearchProposal[]
   announcements Announcement[]
   auditEntries AuditLog[]           @relation("AuditActor")
+  sentMessages Message[]            @relation("MessageSender")
 }
 
 model PasswordResetToken {
@@ -97,6 +98,7 @@ model Game {
   submissions    Submission[]
   turnLogs       TurnLog[]
   announcements  Announcement[]
+  messages       Message[]
   auditEntries   AuditLog[]
   proposals      ResearchProposal[]
   queuedActions  AdminQueuedAction[]
@@ -180,6 +182,33 @@ model Announcement {
   author User @relation(fields: [authorUserId], references: [id])
 
   @@index([gameId])
+}
+
+// Subdivision-to-subdivision communication (tactical HUD comms feed). [D-066]
+// A single row models all three player-authored message kinds; the recipient is
+// disambiguated by (recipientSubdivisionId, recipientIsAdmin):
+//   PUBLIC       -> recipientSubdivisionId = null, recipientIsAdmin = false
+//   SUBDIVISION  -> recipientSubdivisionId = <id>, recipientIsAdmin = false
+//   ADMIN        -> recipientSubdivisionId = null, recipientIsAdmin = true
+// senderSubdivisionId is nullable to reserve room for future system-authored rows,
+// but every row written by the messaging API is player-authored (sender set). [D-066]
+model Message {
+  id                     String   @id @default(cuid())
+  gameId                 Int
+  senderSubdivisionId    Int? // null reserved for future system-authored rows
+  senderUserId           String? // attribution: the user who actually sent it
+  recipientSubdivisionId Int? // null = public post to the whole colony (or admin DM)
+  recipientIsAdmin       Boolean  @default(false) // true = private DM to "high command"
+  channel                String   @default("COMMS") // feed color-coding tag (violet comms lane)
+  body                   String
+  createdAt              DateTime @default(now())
+
+  game   Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  sender User? @relation("MessageSender", fields: [senderUserId], references: [id], onDelete: SetNull)
+
+  @@index([gameId, createdAt])
+  @@index([gameId, recipientSubdivisionId])
+  @@index([gameId, senderSubdivisionId])
 }
 
 model AuditLog {
