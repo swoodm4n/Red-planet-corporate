@@ -1092,9 +1092,87 @@ beats a hard failure when a half-composed draft has one invalid entry.
 
 ---
 
+## K. Subdivision Comms (backend agent)
+
+Player-authored subdivision-to-subdivision messaging for the tactical-HUD comms
+feed. Extends the §18 information-visibility contract to a new data class (messages)
+the rulebook/GAME_SPEC never anticipated. Made by the **backend** agent.
+
+### D-066 — Comms messages are a new information class, delivered in real time, keyed on subdivision id
+*Source: new frontend feature (composer + feed) with no §18 coverage — §18 enumerates
+Public vs Private facts about game *state*, but says nothing about player-authored
+messages, their delivery timing, or their visibility to third parties.*
+**Ruling:** A `Message` row (one table, all kinds) carries `senderSubdivisionId`
+(nullable — reserved for future system-authored rows; always set by the API today),
+`senderUserId` (attribution), `recipientSubdivisionId` (nullable), `recipientIsAdmin`
+(bool), `channel` (`"COMMS"` tag for the frontend's violet diplomacy/comms lane), and
+`body`. The three player kinds are disambiguated by the recipient columns:
+**PUBLIC** = `(recipientSubdivisionId=null, recipientIsAdmin=false)` — a colony-wide
+post, the player-authored analogue of an admin announcement; **SUBDIVISION** =
+`(recipientSubdivisionId=<id>, false)` — a private DM to one rival; **ADMIN** =
+`(null, true)` — a private DM to "high command". The API surfaces a derived
+`scope: "PUBLIC"|"SUBDIVISION"|"ADMIN"` so the frontend never re-derives it.
+**Visibility (server-enforced, extends §18):** messages are **delivered
+immediately**, NOT subject to turn-based/intel-gated visibility — comms are
+out-of-band chatter, not observable game state, so the §21 intel tiers do not apply.
+Visibility is keyed on **subdivision id**, not user id: a player sees every DM whose
+sender or recipient is their *current* subdivision, so a re-assigned player inherits
+that subdivision's comms history retroactively (and a retired/removed player's
+subdivision keeps the thread for whoever holds the slot next). No per-message read
+state, no rate limiting, no profanity filtering (per brief — game feature, not a
+public chat product). `channel` is a constant `"COMMS"` for all three kinds; the
+feed distinguishes public vs private by `scope`, not by channel colour.
+**Reasoning:** One table with a discriminating recipient pair is the smallest model
+that covers all three kinds without a polymorphic mess. Real-time (not turn-gated)
+delivery matches how players actually negotiate in a PBEM game and keeps the feature
+independent of the intel system. Keying on subdivision id (not user id) is consistent
+with the rest of the app, where the *subdivision* — not the person — is the unit of
+ownership and private data ([D-032] hands a slot's assets to its next holder); a DM is
+addressed to a faction, and whoever crews that faction reads it.
+
+### D-067 — Comms authorization mirrors the existing subdivision-ownership + admin-sees-all model
+*Source: brief — enforce the same information boundaries as every other endpoint;
+choose (and document) whether admin sees all DMs or only high-command DMs.*
+**Ruling:** **Send:** a player may only post AS their own assigned subdivision
+(`requireOwnedSubdivision`); the sender is server-derived and the client-supplied body
+carries only recipient + text. A SUBDIVISION DM's target must be an existing
+subdivision in the game (else 404) and may not be the sender itself (400). **Read:** a
+PLAYER sees all PUBLIC posts in the game plus every DM their own subdivision is a party
+to (sender OR recipient) — including their own DMs to high command — and NEVER a DM
+strictly between two other subdivisions nor another subdivision's DM to high command.
+An **ADMIN** sees the entire feed (all public posts + all DMs, including every
+subdivision-to-subdivision DM), reusing the app's established "admin sees everything"
+precedent (`assertSubdivisionAccess` admin bypass, the admin report route that reads any
+subdivision's private data). This is enforced in the SQL `where`, not in the UI.
+**Reasoning:** The visibility split is the highest-stakes part of the task; reusing the
+exact `requireOwnedSubdivision` guard and the admin-omniscience precedent keeps it
+consistent with — and no weaker than — the boundaries already audited elsewhere. Admin
+full-feed visibility is the safer, precedent-matching choice (an admin adjudicating
+disputes already reads any private report), and it is strictly a superset, so it can
+never leak a player's data to another *player*.
+
+### D-068 — Admins do not send through the comms system; announcements stay separate
+*Source: open question in brief — may admin post public messages through this system or
+keep the existing announcement system?*
+**Ruling:** The comms `POST` is **player-only** (an admin has no assigned subdivision,
+so `requireOwnedSubdivision` naturally rejects them). Admins keep the **existing,
+separate `Announcement` system** for colony-wide broadcasts. Admins can **read** the
+whole comms feed (D-067) but do not author comms messages, including replies to
+high-command DMs — any high-command response is handled out-of-band (an announcement or
+a future admin-reply surface), which this pass does not build. The frontend blends
+announcements and comms client-side into one feed (both already available via their own
+endpoints).
+**Reasoning:** Announcements already exist, are authored/attributed to an admin user,
+and carry a title; folding admin broadcasts into the sender-less/subdivision-keyed
+message model would force awkward nullable-sender semantics for no gain. Keeping the two
+systems separate is the smallest change and leaves the announcement contract the
+frontend already consumes untouched.
+
+---
+
 ## Decision categories at a glance
 
-The 65 decisions group into ten categories A–J, numbered sequentially with no
+The 68 decisions group into eleven categories A–K, numbered sequentially with no
 gaps. Categories A–F were made by the **spec-analyst** while writing
 `GAME_SPEC.md`; G by the **game-engine** agent as implementation surfaced further
 ambiguity; H by the **backend** agent for server-only concerns; I by the
@@ -1105,7 +1183,8 @@ for tile-view edge cases surfaced while implementing §21.6; J by the
 (D-056–D-061), with D-062–D-063 added by the **game-engine** agent for
 implementation-level rulings surfaced while building §22, and D-064–D-065 by the
 **backend** agent for the draft-aware available-actions endpoint (D-064) and its
-draft-garrison fix (D-065). All are binding on downstream code.
+draft-garrison fix (D-065); K by the **backend** agent for the subdivision comms /
+messaging feature (D-066–D-068). All are binding on downstream code.
 
 | Cat | Theme | Decisions | Representative rulings |
 |---|---|---|---|
@@ -1119,6 +1198,7 @@ draft-garrison fix (D-065). All are binding on downstream code.
 | **H** | Backend / Server | D-043 – D-049 | `validateSubmission` reuses the engine (D-043); custom JWT auth (D-044); snapshot-authoritative persistence (D-045); structured admin events/edits (D-046); structured research grants (D-047); six-slot seed + admin assignment (D-048); camelCase label humanization (D-049) |
 | **I** | Intel Visibility & Square Map | D-050 – D-055 | square 12×8 grid, 8-dir Chebyshev adjacency (D-050); espionage/opsec formula + tiers + start invariant (D-051); intel tier derived per-pair, unstored, global per opponent (D-052); gated tile-view shape per tier (D-053); spotting vs intel-tier decoupled, borders stop gating visibility (D-054); tile-view edge cases — unclaimed/off-map/RETIRED, output keying, map-level split (D-055) |
 | **J** | Unit Attention & Action Availability | D-056 – D-064 | per-unit `attentionSpentThisTurn` field + Phase-8 reset (D-056); type+count requirements, lowest-id tie-break, closes duplicate-unit Phase-2 gap (D-057); garrison/crewing spends no attention (D-058); attention is turn-global, political/corporate attention-neutral today (D-059); multi-group/crewed actions spend all units atomically, one crewed action per vehicle (D-060); building available-action list = the validator's own live predicate (D-061); optional field, absent===unspent (D-062); per-action requirement mapping, attention-gate ordering & availableActions scope (D-063); draft-aware available-actions endpoint reusing the engine predicate + widened attention exports (D-064); available-actions preview applies the draft's garrison (Phase 1) before deriving per-building actions, via extracted `applyGarrisonForSubdivision` (D-065) |
+| **K** | Subdivision Comms | D-066 – D-068 | player-authored messages as a new real-time (non-turn-gated) info class, one table keyed on subdivision id, PUBLIC/SUBDIVISION/ADMIN via recipient columns (D-066); auth mirrors `requireOwnedSubdivision` + admin-sees-all feed (D-067); admins read but don't send, announcements stay separate (D-068) |
 
 Cross-cutting themes: **determinism** (A-D-002, C-D-016, F-D-035) forbids floats,
 wall-clock, and host dice; **admin-stamped structured effects** (F-D-034,
@@ -1130,5 +1210,5 @@ normalization) are catalogued in [`BUILD_SUMMARY.md`](BUILD_SUMMARY.md).
 
 ---
 
-*End of DECISIONS.md (D-001 – D-065). Append new decisions as later phases surface
+*End of DECISIONS.md (D-001 – D-068). Append new decisions as later phases surface
 gaps; never renumber existing entries.*

@@ -93,6 +93,8 @@ status (400/401/403/404/409/500). Auth via the `rpc_session` cookie (set by logi
 | GET | `/api/games/:gameId/turns` | approved | index of resolved turns (+event) |
 | GET | `/api/games/:gameId/turns/:turnNumber` | approved | player: event+scoreboard; admin: full log |
 | GET | `/api/games/:gameId/announcements` | approved | colony announcements |
+| GET | `/api/games/:gameId/messages` | approved | comms feed the caller is entitled to see (player: public + own DMs; admin: all) — see comms contract below |
+| POST | `/api/games/:gameId/messages` | **owner** | send as own subdivision; body `{recipient,body}` — see comms contract below |
 | GET | `/api/games/:gameId/research-proposals` | **owner** | own proposals + admin rulings |
 | POST | `/api/games/:gameId/research-proposals` | **owner** | `{proposalText}` → PENDING proposal |
 
@@ -253,6 +255,70 @@ Semantics the frontend can rely on:
   instead of any client-side derivation.
 - Attention state is turn-scoped and derived from turn-start snapshot + draft only;
   the request never mutates persisted state (the game is cloned per call).
+
+#### Subdivision comms contract (tactical-HUD feed / [D-066]–[D-068])
+
+Player-authored subdivision-to-subdivision messaging. This is the **messaging piece
+only** — the frontend blends it with the already-existing turn logs (`…/turns`) and
+announcements (`…/announcements`) into its unified feed client-side; there is
+deliberately no combined-feed endpoint (see the report note at the bottom). All
+player messages are tagged `channel: "COMMS"` (the frontend's violet diplomacy/comms
+lane); public vs private is carried by the derived `scope` field, not the channel.
+
+Three kinds, discriminated by the recipient:
+- **PUBLIC** — a colony-wide post (player-authored analogue of an announcement),
+  visible to every subdivision.
+- **SUBDIVISION** — a private DM to one rival subdivision.
+- **ADMIN** — a private DM to "high command" (the admin).
+
+`POST /api/games/:gameId/messages` (auth: **owner**; sender is the caller's own
+subdivision, server-derived — never trusted from the client):
+```jsonc
+{
+  "recipient": { "type": "PUBLIC" },
+  // or { "type": "SUBDIVISION", "subdivisionId": 3 }   // must exist, must not be self
+  // or { "type": "ADMIN" },                             // DM to high command
+  "body": "Proposing a water-for-minerals swap next turn."
+}
+```
+→ `201 { "ok": true, "message": Message }`. Errors: `400` self-DM / empty or >4000-char
+body, `404` unknown recipient subdivision or game, `403` caller has no subdivision in
+this game (admins have none — they use the announcement system to broadcast, [D-068]).
+
+`GET /api/games/:gameId/messages` (auth: approved) → `200`:
+```jsonc
+{
+  "gameId": 1,
+  "viewerSubdivisionId": 2,   // caller's subdivision; null for admin (whole-feed view)
+  "isAdmin": false,
+  "messages": [ /* newest-first, max 200 */ ]
+}
+```
+Each `Message`:
+```jsonc
+{
+  "id": "clx…",
+  "gameId": 1,
+  "scope": "SUBDIVISION",          // "PUBLIC" | "SUBDIVISION" | "ADMIN" (derived)
+  "channel": "COMMS",
+  "senderSubdivisionId": 2,        // author's subdivision (null only for future system rows)
+  "recipientSubdivisionId": 3,     // null for PUBLIC and ADMIN
+  "recipientIsAdmin": false,       // true for ADMIN (high-command) DMs
+  "body": "…",
+  "createdAt": "2026-07-21T…Z"
+}
+```
+
+**Visibility (enforced server-side in SQL, never in UI):**
+- **PLAYER** sees: all PUBLIC posts in the game + every DM their OWN subdivision is a
+  party to (sender OR recipient), including their own DMs to high command. A player
+  NEVER sees a DM strictly between two other subdivisions, nor another subdivision's DM
+  to high command.
+- **ADMIN** sees: the entire feed (all public + all DMs), matching the existing
+  "admin views any subdivision's private data" precedent ([D-067]).
+- Messages are delivered **immediately** — NOT turn-gated or intel-gated ([D-066]);
+  they are out-of-band chatter, not observable game state. Visibility is keyed on
+  **subdivision id**, so a re-assigned player inherits that subdivision's comms history.
 
 ### Admin (`role === ADMIN`)
 | Method | Path | Notes |
