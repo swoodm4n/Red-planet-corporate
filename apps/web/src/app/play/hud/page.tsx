@@ -83,11 +83,12 @@ export default function HudPage() {
   const [localFeed, setLocalFeed] = useState<FeedItem[]>([]);
   const [now, setNow] = useState(Date.now());
 
-  // Live tick for the cycle clock.
+  // Live tick for the cycle clock (re-renders so countdown() re-evaluates each second).
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+  void now;
 
   // ---- initial + refetchable loads ----
   const loadCore = useCallback(() => {
