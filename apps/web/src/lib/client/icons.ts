@@ -46,6 +46,43 @@ export const HULL_ICONS: Record<string, string> = {
   HEAVY: "vehicle-heavy",
 };
 
+/** ActionType -> icon filename (command-card glyphs). Falls back to settings gear. */
+export const ACTION_ICONS: Record<string, string> = {
+  BOOST_OUTPUT: "action-settings",
+  EMERGENCY_EXTRACTION: "action-settings",
+  MARKET_SALE: "action-trade",
+  COLONIST_REQUISITION: "action-garrison",
+  TERRITORIAL_CLAIM: "action-move",
+  RESOURCE_TRANSFER: "action-trade",
+  PRODUCE_VEHICLE: "action-build",
+  AMPLIFY_CREDIT_YIELD: "action-dividend",
+  RESEARCH_SPRINT: "action-research",
+  PASSIVE_INTEL_SCAN: "status-spotting",
+  LOCKDOWN: "action-settings",
+  CONSTRUCT_BUILDING: "action-build",
+  INSTALL_MODULE: "action-settings",
+  TIER_UPGRADE: "action-upgrade",
+  PLACE_OUTPOST: "outpost",
+  SURVEY_HEX: "status-spotting",
+  DEMOLISH: "action-settings",
+  REPAIR_BUILDING: "action-settings",
+  SABOTAGE: "status-alert",
+  INTERCEPT: "status-alert",
+  FIELD_RESEARCH: "action-research",
+  TRADE_ACTION: "action-trade",
+  NEGOTIATE: "action-dividend",
+  LOBBY: "action-dividend",
+  PATROL: "status-spotting",
+  ENFORCE_TERRITORY: "status-alert",
+  COUNTER_INTEL: "status-spotting",
+  VEHICLE_MOVE: "action-move",
+  VEHICLE_ATTACK: "status-alert",
+};
+
+export function actionIcon(action: string): string {
+  return ACTION_ICONS[action] ?? "action-settings";
+}
+
 export function buildingIcon(type: string): string | null {
   return BUILDING_ICONS[type] ?? null;
 }

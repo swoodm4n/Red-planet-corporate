@@ -301,6 +301,33 @@ export interface CorporateActionOrder {
   params?: Record<string, unknown>;
 }
 
+// ---- Subdivision comms ([D-066]–[D-068]) ----
+export type MessageScope = "PUBLIC" | "SUBDIVISION" | "ADMIN";
+
+export interface Message {
+  id: string;
+  gameId: number;
+  scope: MessageScope;
+  channel: string; // always "COMMS" for player messages
+  senderSubdivisionId: number | null;
+  recipientSubdivisionId: number | null;
+  recipientIsAdmin: boolean;
+  body: string;
+  createdAt: string;
+}
+
+export interface MessagesResponse {
+  gameId: number;
+  viewerSubdivisionId: number | null;
+  isAdmin: boolean;
+  messages: Message[];
+}
+
+export type MessageRecipient =
+  | { type: "PUBLIC" }
+  | { type: "SUBDIVISION"; subdivisionId: number }
+  | { type: "ADMIN" };
+
 export interface InvalidOrder {
   subdivisionId: number;
   kind: string;
