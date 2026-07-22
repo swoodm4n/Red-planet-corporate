@@ -160,15 +160,23 @@ export default function HudPage() {
     [gameId],
   );
 
-  // Default the command card to the first owned building on the tile with baseline actions.
+  // Default the command card to the first of MY buildings on the selected hex that
+  // has baseline actions. Sourced from the private report (authoritative for my own
+  // structures) rather than the intel-gated tile payload — a building can sit on a
+  // hex the map reports as unclaimed, so tile.ownBuildings alone would miss it.
   useEffect(() => {
-    if (!tile || tile.intelTier !== "OWN" || !tile.ownBuildings?.length) {
+    if (!sel || !report) {
       setSelBuildingId(null);
       return;
     }
-    const withActions = tile.ownBuildings.find((b) => (baseline?.buildings?.[String(b.id)]?.length ?? 0) > 0);
-    setSelBuildingId((withActions ?? tile.ownBuildings[0]).id);
-  }, [tile, baseline]);
+    const here = report.own.buildings.filter((b) => b.hex.col === sel.col && b.hex.row === sel.row);
+    if (!here.length) {
+      setSelBuildingId(null);
+      return;
+    }
+    const withActions = here.find((b) => (baseline?.buildings?.[String(b.id)]?.length ?? 0) > 0);
+    setSelBuildingId((withActions ?? here[0]).id);
+  }, [sel, report, baseline]);
 
   const names = useMemo(() => {
     const m = new Map<number, string>();
@@ -186,7 +194,8 @@ export default function HudPage() {
     return m;
   }, [map]);
 
-  // Owned garrison headcount per tile (from the private report) — the cyan grid number.
+  // Owned garrison headcount per tile + the set of hexes where I have buildings
+  // (from the private report) — the cyan grid number and the owned-tile highlight.
   const ownGarrisonByTile = useMemo(() => {
     const m = new Map<string, number>();
     if (report) {
@@ -197,6 +206,11 @@ export default function HudPage() {
       }
     }
     return m;
+  }, [report]);
+  const myHexes = useMemo(() => {
+    const s = new Set<string>();
+    if (report) for (const b of report.own.buildings) s.add(`${b.hex.col},${b.hex.row}`);
+    return s;
   }, [report]);
 
   const feed = useMemo(
@@ -244,10 +258,14 @@ export default function HudPage() {
   const spentUnits = Object.values(avail?.unitAttention ?? {}).filter(Boolean).length;
   const remaining = totalUnits - spentUnits;
 
+  // My buildings on the selected hex (authoritative private data — see effect above).
+  const myBuildingsHere = sel ? own.buildings.filter((b) => b.hex.col === sel.col && b.hex.row === sel.row) : [];
+  const hasMineHere = myBuildingsHere.length > 0;
+
   // Selected tile classification for panels.
-  const isOwnTile = tile?.intelTier === "OWN";
-  const isHostileTile = tile != null && tile.owner != null && tile.owner !== subdivisionId;
-  const isEmptyTile = tile != null && tile.owner == null;
+  const isOwnTile = tile?.intelTier === "OWN" || hasMineHere;
+  const isHostileTile = tile != null && tile.owner != null && tile.owner !== subdivisionId && !hasMineHere;
+  const isEmptyTile = tile != null && tile.owner == null && !hasMineHere;
 
   const submitDisabled = game?.status !== "ACTIVE";
 
@@ -333,6 +351,7 @@ export default function HudPage() {
           markerAt={markerAt}
           subdivisionId={subdivisionId}
           ownGarrisonByTile={ownGarrisonByTile}
+          myHexes={myHexes}
           sel={sel}
           onSelect={fetchTile}
         />
@@ -343,6 +362,7 @@ export default function HudPage() {
             tileLoading={tileLoading}
             sel={sel}
             report={report}
+            myBuildingsHere={myBuildingsHere}
             avail={avail}
             names={names}
             subdivisionId={subdivisionId}
@@ -407,6 +427,7 @@ function MapViewport({
   markerAt,
   subdivisionId,
   ownGarrisonByTile,
+  myHexes,
   sel,
   onSelect,
 }: {
@@ -414,10 +435,14 @@ function MapViewport({
   markerAt: Map<string, MapTileMarker>;
   subdivisionId: number;
   ownGarrisonByTile: Map<string, number>;
+  myHexes: Set<string>;
   sel: { col: number; row: number } | null;
   onSelect: (col: number, row: number) => void;
 }) {
-  const mine = map.tiles.filter((t) => t.owner === subdivisionId).length;
+  const mine = new Set([
+    ...map.tiles.filter((t) => t.owner === subdivisionId).map((t) => `${t.coord.col},${t.coord.row}`),
+    ...myHexes,
+  ]).size;
   const rival = map.tiles.filter((t) => t.owner != null && t.owner !== subdivisionId).length;
 
   function glyphFor(t: MapTileMarker): string | null {
@@ -452,8 +477,8 @@ function MapViewport({
                 const col = ci + 1;
                 const t = markerAt.get(`${col},${row}`);
                 if (!t) return <div className="hud-tile impassable" key={col} />;
-                const owned = t.owner === subdivisionId;
-                const hostile = t.owner != null && !owned;
+                const owned = t.owner === subdivisionId || myHexes.has(`${col},${row}`);
+                const hostile = t.owner != null && t.owner !== subdivisionId && !myHexes.has(`${col},${row}`);
                 const cls = ["hud-tile"];
                 if (owned) cls.push("owned");
                 else if (hostile) cls.push("hostile");
@@ -488,7 +513,7 @@ function MapViewport({
           Array.from({ length: COLS }, (_, ci) => {
             const t = markerAt.get(`${ci + 1},${ri + 1}`);
             const cls = ["hud-mini"];
-            if (t?.owner === subdivisionId) cls.push("owned");
+            if (t?.owner === subdivisionId || myHexes.has(`${ci + 1},${ri + 1}`)) cls.push("owned");
             else if (t?.owner != null) cls.push("rival");
             return <div className={cls.join(" ")} key={`${ci}-${ri}`} />;
           }),
@@ -506,6 +531,7 @@ function SelectionPanel({
   tileLoading,
   sel,
   report,
+  myBuildingsHere,
   avail,
   names,
   subdivisionId,
@@ -517,6 +543,7 @@ function SelectionPanel({
   tileLoading: boolean;
   sel: { col: number; row: number } | null;
   report: ReportResponse;
+  myBuildingsHere: OwnBuilding[];
   avail: AvailableActionsResponse | null;
   names: Map<number, string>;
   subdivisionId: number;
@@ -542,24 +569,41 @@ function SelectionPanel({
   }
 
   const own = report.own;
-  const isOwn = tile.intelTier === "OWN";
+  // "Mine here" is driven by the private report (authoritative), so a building on an
+  // unclaimed hex is still commandable even when the intel-gated tile omits it.
+  const hasMine = myBuildingsHere.length > 0;
+  const isOwn = hasMine || tile.intelTier === "OWN";
   const owner = tile.owner;
   const tag = isOwn ? "OWNED" : owner == null ? "EMPTY" : owner === subdivisionId ? "OWNED" : "HOSTILE";
   const tagClass = tag.toLowerCase();
-  const ownerName = owner == null ? "Unclaimed" : owner === subdivisionId ? own.name : names.get(owner) ?? `Subdivision #${owner}`;
+  const ownerName = isOwn ? own.name : owner == null ? "Unclaimed" : names.get(owner) ?? `Subdivision #${owner}`;
+
+  const hasHQhere = myBuildingsHere.some((b) => b.type === "HEADQUARTERS") || tile.hasHQ;
+  const hasOutpostHere = myBuildingsHere.some((b) => b.type === "OUTPOST") || tile.hasOutpost;
 
   // Icon well glyph.
-  const wellGlyph = tile.isLandingZone ? "landing-zone" : tile.hasHQ ? "headquarters" : tile.hasOutpost ? "outpost" : null;
-  const primaryName = tile.hasHQ ? "Headquarters Node" : tile.hasOutpost ? "Outpost Node" : tile.isLandingZone ? "Landing Zone" : owner == null ? "Open Ground" : "Territory Node";
+  const wellGlyph = tile.isLandingZone ? "landing-zone" : hasHQhere ? "headquarters" : hasOutpostHere ? "outpost" : null;
+  const primaryName = hasHQhere
+    ? "Headquarters Node"
+    : hasOutpostHere
+      ? "Outpost Node"
+      : tile.isLandingZone
+        ? "Landing Zone"
+        : hasMine
+          ? `${buildingLabel(myBuildingsHere[0].type)} Node`
+          : owner == null
+            ? "Open Ground"
+            : "Territory Node";
 
-  // Units garrisoned in this tile's own buildings (report), for the pip list.
-  const tileBuildingIds = new Set((tile.ownBuildings ?? []).map((b) => b.id));
-  const tileUnits = isOwn ? own.personnel.filter((p) => p.assignedBuildingId != null && tileBuildingIds.has(p.assignedBuildingId)) : [];
+  // Units garrisoned in MY buildings on this hex (report), for the pip list.
+  const tileBuildingIds = new Set(myBuildingsHere.map((b) => b.id));
+  const tileUnits = hasMine ? own.personnel.filter((p) => p.assignedBuildingId != null && tileBuildingIds.has(p.assignedBuildingId)) : [];
 
-  const integrity = isOwn
-    ? (tile.ownBuildings ?? []).every((b) => b.status === "ACTIVE") ? "NOMINAL" : "DAMAGED"
+  const integrity = hasMine
+    ? myBuildingsHere.every((b) => b.status === "ACTIVE") ? "NOMINAL" : "DAMAGED"
     : "—";
-  const garrisonCount = isOwn ? tileUnits.length : tile.unitCount ?? "—";
+  const garrisonCount = hasMine ? tileUnits.length : isOwn ? tile.unitCount ?? "—" : tile.unitCount ?? "—";
+  const structuresCount = hasMine ? myBuildingsHere.length : tile.intelTier === "OWN" ? tile.ownBuildings?.length ?? 0 : tile.buildingCount ?? "—";
 
   return (
     <div className="hud-sel">
@@ -580,14 +624,14 @@ function SelectionPanel({
       <div className="hud-stats">
         <div className="hud-stat"><div className="hud-stat-label">Integrity</div><div className="hud-stat-val">{integrity}</div></div>
         <div className="hud-stat"><div className="hud-stat-label">Garrison</div><div className="hud-stat-val">{garrisonCount}</div></div>
-        <div className="hud-stat"><div className="hud-stat-label">Structures</div><div className="hud-stat-val">{isOwn ? (tile.ownBuildings?.length ?? 0) : tile.buildingCount ?? "—"}</div></div>
+        <div className="hud-stat"><div className="hud-stat-label">Structures</div><div className="hud-stat-val">{structuresCount}</div></div>
       </div>
 
       {/* Owned tile: building picker + garrison pips */}
-      {isOwn && tile.ownBuildings && tile.ownBuildings.length > 0 && (
+      {hasMine && (
         <div className="hud-sel-section">
           <div className="hud-sel-section-label">Structures on tile</div>
-          {tile.ownBuildings.map((b) => (
+          {myBuildingsHere.map((b) => (
             <div
               key={b.id}
               className={`hud-unit selectable${selBuildingId === b.id ? " active" : ""}`}
@@ -606,7 +650,7 @@ function SelectionPanel({
         </div>
       )}
 
-      {isOwn && tileUnits.length > 0 && (
+      {hasMine && tileUnits.length > 0 && (
         <div className="hud-sel-section">
           <div className="hud-sel-section-label"><span>Garrison</span><span>Attention</span></div>
           {tileUnits.map((u) => {
@@ -657,7 +701,7 @@ function SelectionPanel({
         </div>
       )}
 
-      {isEmpty(tile) && (
+      {!hasMine && isEmpty(tile) && (
         <div className="hud-empty-note">Open ground — no subdivision holds {hexLabel(tile.coord.col, tile.coord.row)}. Deploy an outpost or claim it to project control here.</div>
       )}
     </div>
