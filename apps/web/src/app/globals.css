@@ -4,24 +4,26 @@
    ============================================================ */
 
 :root {
+  /* Token values reconciled to the approved tactical-HUD spec (§2). Single design
+     system — the classic pages consume the same custom properties. */
   --bg-void:       #060906;
-  --bg-panel:      #0D140D;
-  --bg-panel-2:    #121C12;
-  --bg-inset:      #08100A;
+  --bg-panel:      #0C130C;
+  --bg-panel-2:    #101B12;
+  --bg-inset:      #080F09;
   --green-bright:  #4DFF7E;
   --green-mid:     #39C766;
   --green-dim:     #1F5C36;
-  --green-faint:   #173A24;
+  --green-faint:   #123020;
   --text-primary:  #B9F2C8;
   --text-secondary:#5C8A6A;
   --text-tertiary: #3A5944;
   --amber:         #FFB454;
-  --red:           #FF5C5C;
+  --red:           #FF6B6B;
   --cyan:          #6FE3FF;
   --violet:        #C792EA;
   --border:        #1F5C36;
-  --border-dim:    #173825;
-  --scanline-op:   0.035;
+  --border-dim:    #15311F;
+  --scanline-op:   0.045;
   --font: 'IBM Plex Mono', 'Courier New', monospace;
 }
 
@@ -57,11 +59,11 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 9998;
-  box-shadow: inset 0 0 180px rgba(0,0,0,0.65);
+  box-shadow: inset 0 0 240px rgba(0,0,0,0.8);
 }
 
 ::selection { background: var(--green-dim); color: var(--green-bright); }
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg-inset); }
 ::-webkit-scrollbar-thumb { background: var(--green-faint); border: 1px solid var(--border-dim); }
 ::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
@@ -500,4 +502,410 @@ input.console-input::placeholder, textarea.console-input::placeholder { color: v
   .navitem { justify-content: center; padding: 13px 0; }
   .table-scroll table { min-width: 560px; }
   .grid-4 { grid-template-columns: 1fr 1fr; }
+}
+
+/* ============================================================
+   TACTICAL HUD (single-screen RTS + forum) — design spec §1–§11.
+   Full-viewport grid shell; the classic .app shell is bypassed for this route.
+   ============================================================ */
+.hud {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 52px 1fr 340px;
+  grid-template-rows: 44px 1fr;
+  grid-template-areas:
+    "top top top"
+    "rail stage forum";
+  background: var(--bg-void);
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.hud * { min-width: 0; }
+
+/* ---- shared micro-label ---- */
+.hud-label {
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-tertiary); font-weight: 500;
+}
+.hud-tag {
+  font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; font-weight: 600;
+  color: var(--green-mid); border: 1px solid var(--border-dim); padding: 1px 6px;
+}
+.hud-tag.owned { color: var(--green-bright); border-color: var(--green-dim); }
+.hud-tag.hostile { color: var(--red); border-color: var(--red); }
+.hud-tag.neutral { color: var(--text-secondary); }
+.hud-tag.empty { color: var(--text-tertiary); }
+
+.hud-panel-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 12px; border-bottom: 1px solid var(--border-dim);
+  background: var(--bg-panel);
+}
+
+/* ================= TOP BAR (§4) ================= */
+.hud-top {
+  grid-area: top;
+  display: flex; align-items: stretch;
+  background: linear-gradient(to bottom, var(--bg-panel-2), var(--bg-panel));
+  border-bottom: 1px solid var(--border);
+}
+.hud-crest {
+  display: flex; align-items: center; gap: 9px; padding: 0 14px;
+  border-right: 1px solid var(--border-dim);
+}
+.hud-crest-mark {
+  width: 22px; height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--green-mid); color: var(--green-bright);
+  font-weight: 700; font-size: 12px;
+  box-shadow: inset 0 0 8px rgba(77,255,126,0.25);
+}
+.hud-crest-name { font-size: 12px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.03em; white-space: nowrap; }
+.hud-crest-sub { font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+
+.hud-ticker {
+  flex: 1; display: flex; align-items: stretch; overflow-x: auto;
+}
+.hud-ticker::-webkit-scrollbar { height: 3px; }
+.hud-res {
+  display: flex; align-items: center; gap: 6px; padding: 0 14px;
+  border-right: 1px solid var(--border-dim); white-space: nowrap;
+}
+.hud-res-label { font-size: 9px; letter-spacing: 1px; color: var(--text-tertiary); text-transform: uppercase; }
+.hud-res-val { font-size: 12px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.hud-res-delta { font-size: 10px; }
+.hud-res-delta.up { color: var(--green-bright); }
+.hud-res-delta.down { color: var(--red); }
+
+.hud-turn {
+  display: flex; align-items: center; gap: 12px; padding: 0 12px;
+  border-left: 1px solid var(--border-dim);
+}
+.hud-turn-txt { font-size: 10px; letter-spacing: 0.06em; color: var(--text-secondary); text-transform: uppercase; white-space: nowrap; }
+.hud-turn-txt b { color: var(--cyan); font-weight: 700; }
+.hud-endcycle {
+  font-family: var(--font); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 6px 14px; background: var(--green-mid); color: var(--bg-void);
+  border: 1px solid var(--green-bright); cursor: pointer;
+  box-shadow: 0 0 12px rgba(77,255,126,0.35); text-transform: uppercase;
+}
+.hud-endcycle:hover:not(:disabled) { background: var(--green-bright); }
+.hud-endcycle:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+/* ================= NAV RAIL (§5) ================= */
+.hud-rail {
+  grid-area: rail;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 0; gap: 4px;
+  background: var(--bg-panel); border-right: 1px solid var(--border);
+}
+.hud-rail-item {
+  position: relative; width: 40px; height: 40px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); cursor: pointer;
+  border-left: 2px solid transparent; background: none;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.hud-rail-item:hover { color: var(--green-bright); background: var(--bg-panel-2); }
+.hud-rail-item.active { color: var(--green-bright); background: var(--bg-panel-2); border-left-color: var(--green-bright); }
+.hud-rail-item svg { width: 20px; height: 20px; }
+.hud-rail-spacer { flex: 1; }
+.hud-rail-badge {
+  position: absolute; top: 4px; right: 4px; min-width: 13px; height: 13px; padding: 0 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; border-radius: 7px;
+  background: var(--amber); color: var(--bg-void);
+}
+.hud-rail-badge.alert { background: var(--red); border-radius: 50%; }
+.hud-rail-tip {
+  position: absolute; left: 46px; top: 50%; transform: translateY(-50%);
+  background: var(--bg-inset); border: 1px solid var(--border); color: var(--text-primary);
+  font-size: 10px; letter-spacing: 0.04em; padding: 4px 8px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.12s ease; z-index: 40;
+}
+.hud-rail-item:hover .hud-rail-tip { opacity: 1; }
+
+/* ================= STAGE (§3) ================= */
+.hud-stage {
+  grid-area: stage;
+  display: grid; grid-template-rows: 1fr 210px;
+  min-height: 0; min-width: 0; overflow: hidden;
+}
+
+/* ---- Map viewport (§6) ---- */
+.hud-viewport {
+  position: relative; min-height: 0; overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #0e1a10 0%, #070c08 70%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  padding: 30px 16px 16px;
+}
+.hud-viewport-status {
+  position: absolute; top: 8px; left: 12px; z-index: 5;
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary);
+}
+.hud-viewport-status b { color: var(--green-mid); }
+.hud-intel-key {
+  position: absolute; top: 8px; right: 12px; z-index: 5;
+  display: flex; gap: 12px; font-size: 9px; color: var(--text-tertiary); letter-spacing: 0.5px;
+}
+.hud-intel-key span { display: inline-flex; align-items: center; gap: 4px; }
+.hud-key-swatch { width: 9px; height: 9px; display: inline-block; }
+.hud-key-swatch.owned { background: #0d1a12; border: 1px solid var(--green-bright); }
+.hud-key-swatch.med { background: var(--bg-panel); border: 1px solid var(--green-dim); }
+.hud-key-swatch.low { background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(92,138,106,0.4) 2px, rgba(92,138,106,0.4) 3px); border: 1px solid var(--border-dim); }
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: 14px repeat(12, 1fr);
+  grid-auto-rows: min-content;
+  gap: 2px;
+  width: 100%; max-width: min(100%, calc((100vh - 44px - 210px - 60px) * 12 / 8));
+  max-height: 100%;
+}
+.hud-grid-corner {}
+.hud-grid-collabel, .hud-grid-rowlabel {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: var(--text-tertiary); font-weight: 600;
+}
+.hud-tile {
+  position: relative; aspect-ratio: 1 / 1;
+  background: var(--bg-panel); border: 1px solid var(--border-dim);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.1s ease, box-shadow 0.1s ease;
+  overflow: hidden;
+}
+.hud-tile:hover { border-color: var(--green-dim); background: var(--bg-panel-2); }
+.hud-tile:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.hud-tile.owned { background: #0d1a12; }
+.hud-tile.owned .hud-tile-glyph { filter: drop-shadow(0 0 4px rgba(77,255,126,0.6)); }
+.hud-tile.impassable { background: #101010; cursor: not-allowed; }
+.hud-tile.selected {
+  border-color: var(--green-bright);
+  box-shadow: 0 0 0 1px var(--green-bright), 0 0 10px rgba(77,255,126,0.4);
+  z-index: 3;
+}
+.hud-tile-glyph { width: 62%; height: 62%; object-fit: contain; image-rendering: pixelated; pointer-events: none; }
+.hud-tile.hostile .hud-tile-glyph { filter: brightness(0.7) sepia(1) hue-rotate(-30deg) saturate(4); }
+.hud-tile-own-dot {
+  position: absolute; top: 2px; left: 2px; width: 5px; height: 5px;
+  background: var(--green-mid); box-shadow: 0 0 4px var(--green-mid);
+}
+.hud-tile-garr {
+  position: absolute; bottom: 1px; right: 2px; font-size: 8px; font-weight: 700;
+  color: var(--cyan); line-height: 1; pointer-events: none;
+}
+/* Fog by intel tier (driven by API intelTier) */
+.hud-tile.fog-low {
+  background-image: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(92,138,106,0.18) 2px, rgba(92,138,106,0.18) 3px);
+}
+.hud-tile.fog-low .hud-tile-glyph { opacity: 0.15; filter: blur(1px); }
+.hud-tile.fog-low .hud-tile-q {
+  position: absolute; font-size: 11px; color: var(--text-tertiary); opacity: 0.55;
+}
+.hud-tile.fog-med .hud-tile-glyph { opacity: 0.5; }
+
+.hud-minimap {
+  position: absolute; bottom: 10px; right: 12px; z-index: 5;
+  width: 104px; height: 78px; padding: 3px;
+  background: var(--bg-inset); border: 1px solid var(--border-dim);
+  display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(8, 1fr); gap: 1px;
+}
+.hud-mini { background: var(--bg-panel); }
+.hud-mini.owned { background: var(--green-mid); }
+.hud-mini.rival { background: #7a2a2a; }
+
+/* ---- Lower HUD (selection + command) ---- */
+.hud-lower { display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
+
+/* Selection panel (§7) */
+.hud-sel {
+  min-height: 0; overflow-y: auto; padding: 0 0 12px;
+  border-right: 1px solid var(--border-dim); background: var(--bg-panel);
+}
+.hud-sel-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px; }
+.hud-sel-well {
+  width: 42px; height: 42px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-dim); background: var(--bg-inset);
+}
+.hud-sel-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.hud-sel-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.hud-sel-coord { font-size: 10px; letter-spacing: 1px; color: var(--text-tertiary); text-transform: uppercase; margin-top: 2px; }
+.hud-stats { display: flex; gap: 0; border-top: 1px solid var(--border-dim); border-bottom: 1px solid var(--border-dim); }
+.hud-stat { flex: 1; padding: 8px 12px; border-right: 1px solid var(--border-dim); }
+.hud-stat:last-child { border-right: none; }
+.hud-stat-label { font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-tertiary); }
+.hud-stat-val { font-size: 15px; font-weight: 600; color: var(--green-bright); margin-top: 2px; }
+.hud-sel-section { padding: 10px 12px 0; }
+.hud-sel-section-label {
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary);
+  margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;
+}
+
+.hud-unit {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px;
+  background: var(--bg-inset); border: 1px solid var(--border-dim);
+  cursor: pointer;
+}
+.hud-unit.selectable:hover { border-color: var(--green-dim); }
+.hud-unit.active { border-color: var(--green-bright); }
+.hud-unit-name { font-size: 11px; color: var(--text-primary); }
+.hud-unit-type { font-size: 9px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px; }
+.hud-unit-pips { margin-left: auto; display: flex; gap: 3px; }
+.hud-pip { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--border-dim); }
+.hud-pip.full { background: var(--green-mid); border-color: var(--green-mid); box-shadow: 0 0 4px var(--green-mid); }
+.hud-pip.spent { background: transparent; }
+.hud-masked { font-size: 10px; color: var(--text-tertiary); font-style: italic; }
+.hud-empty-note {
+  padding: 14px 12px; margin: 8px 12px; font-size: 11px; line-height: 1.55; color: var(--text-tertiary);
+  border: 1px dashed var(--border-dim); text-align: center;
+}
+
+/* Command card (§8) */
+.hud-cmd {
+  min-height: 0; display: flex; flex-direction: column;
+  background: var(--bg-panel);
+}
+.hud-cmd-grid {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px; padding: 10px;
+  align-content: start;
+}
+.hud-cmd-btn {
+  position: relative; aspect-ratio: 1 / 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+  background: var(--bg-inset); border: 1px solid var(--border);
+  color: var(--text-primary); cursor: pointer; padding: 4px;
+  font-family: var(--font); transition: border-color 0.1s ease, transform 0.05s ease;
+}
+.hud-cmd-btn:hover { border-color: var(--green-bright); color: var(--green-bright); }
+.hud-cmd-btn:active { transform: translate(1px, 1px); }
+.hud-cmd-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.hud-cmd-glyph { width: 19px; height: 19px; object-fit: contain; image-rendering: pixelated; }
+.hud-cmd-lbl { font-size: 8px; letter-spacing: 0.4px; text-transform: uppercase; text-align: center; line-height: 1.1; color: var(--text-secondary); }
+.hud-cmd-btn:hover .hud-cmd-lbl { color: var(--green-bright); }
+.hud-cmd-pips { position: absolute; top: 3px; right: 3px; display: flex; gap: 2px; }
+.hud-cmd-cost { width: 4px; height: 4px; border-radius: 50%; background: var(--amber); }
+.hud-cmd-btn.offensive { border-color: var(--red); }
+.hud-cmd-btn.offensive .hud-cmd-lbl { color: var(--red); }
+.hud-cmd-btn.offensive:hover { border-color: var(--red); color: var(--red); }
+.hud-cmd-btn.exhausted {
+  opacity: 0.32; border-style: dashed; cursor: not-allowed; pointer-events: none;
+}
+.hud-cmd-btn.exhausted .hud-cmd-cost { background: var(--text-tertiary); }
+.hud-cmd-foot {
+  border-top: 1px solid var(--border-dim); padding: 8px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-panel);
+}
+.hud-cmd-foot-label { font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-tertiary); }
+.hud-cmd-foot-val { font-size: 12px; font-weight: 700; }
+.hud-cmd-foot-val b { color: var(--green-mid); }
+
+/* ================= FORUM (§9) ================= */
+.hud-forum {
+  grid-area: forum;
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--bg-panel); border-left: 1px solid var(--border);
+}
+.hud-tabs { display: flex; border-bottom: 1px solid var(--border-dim); }
+.hud-tab {
+  flex: 1; position: relative; padding: 9px 4px; background: none; border: none;
+  border-bottom: 2px solid transparent; cursor: pointer; font-family: var(--font);
+  font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-secondary);
+}
+.hud-tab:hover { color: var(--text-primary); }
+.hud-tab.active { color: var(--green-bright); border-bottom-color: var(--green-bright); background: var(--bg-panel-2); }
+.hud-tab-dot { position: absolute; top: 5px; right: 8px; width: 5px; height: 5px; border-radius: 50%; }
+.hud-feed { flex: 1; min-height: 0; overflow-y: auto; }
+.hud-post {
+  padding: 8px 12px; border-bottom: 1px solid var(--border-dim);
+  border-left: 2px solid var(--border-dim);
+}
+.hud-post.intel { border-left-color: var(--cyan); }
+.hud-post.war { border-left-color: var(--red); }
+.hud-post.comms { border-left-color: var(--violet); }
+.hud-post.market { border-left-color: var(--amber); }
+.hud-post.system { border-left-color: var(--green-mid); }
+.hud-post-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+.hud-post-chan {
+  font-size: 8px; letter-spacing: 0.6px; text-transform: uppercase; font-weight: 600;
+  border: 1px solid currentColor; padding: 0 4px; opacity: 0.85;
+}
+.hud-post.intel .hud-post-chan { color: var(--cyan); }
+.hud-post.war .hud-post-chan { color: var(--red); }
+.hud-post.comms .hud-post-chan { color: var(--violet); }
+.hud-post.market .hud-post-chan { color: var(--amber); }
+.hud-post.system .hud-post-chan { color: var(--green-mid); }
+.hud-post-src { font-size: 11px; font-weight: 600; }
+.hud-post.intel .hud-post-src { color: var(--cyan); }
+.hud-post.war .hud-post-src { color: var(--red); }
+.hud-post.comms .hud-post-src { color: var(--violet); }
+.hud-post.market .hud-post-src { color: var(--amber); }
+.hud-post.system .hud-post-src { color: var(--green-mid); }
+.hud-post-time { margin-left: auto; font-size: 9px; color: var(--text-tertiary); }
+.hud-post-body { font-size: 12px; color: var(--text-primary); line-height: 1.4; word-break: break-word; }
+.hud-post-actions { display: flex; gap: 12px; margin-top: 4px; }
+.hud-post-act {
+  font-size: 10px; color: var(--text-tertiary); background: none; border: none; cursor: pointer;
+  font-family: var(--font); padding: 0;
+}
+.hud-post-act:hover { color: var(--green-mid); }
+
+.hud-composer { border-top: 1px solid var(--border-dim); padding: 10px; background: var(--bg-panel-2); }
+.hud-composer-to { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.hud-composer-to label { font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--violet); }
+.hud-composer-to select {
+  flex: 1; background: var(--bg-inset); border: 1px solid var(--border-dim); color: var(--text-primary);
+  font-family: var(--font); font-size: 11px; padding: 4px 6px;
+}
+.hud-composer-row { display: flex; gap: 6px; align-items: stretch; }
+.hud-composer textarea {
+  flex: 1; height: 48px; resize: none;
+  background: var(--bg-inset); border: 1px solid var(--border-dim); color: var(--text-primary);
+  font-family: var(--font); font-size: 12px; padding: 7px 8px;
+}
+.hud-composer textarea:focus { outline: none; border-color: var(--green-dim); box-shadow: 0 0 0 2px rgba(31,92,54,0.5); }
+.hud-composer textarea::placeholder { color: var(--text-tertiary); }
+.hud-send {
+  flex-shrink: 0; align-self: stretch; padding: 0 12px;
+  background: var(--green-mid); color: var(--bg-void); border: 1px solid var(--green-bright);
+  font-family: var(--font); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer;
+}
+.hud-send:hover:not(:disabled) { background: var(--green-bright); }
+.hud-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hud-loading { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-tertiary); font-size: 12px; letter-spacing: 0.1em; }
+
+/* ---- param popover (command actions needing targets) ---- */
+.hud-param-pop {
+  position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.6); padding: 20px;
+}
+.hud-param-card { width: 100%; max-width: 360px; background: var(--bg-panel); border: 1px solid var(--border); }
+.hud-param-body { padding: 14px; }
+.hud-param-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border-dim); }
+
+/* ================= RESPONSIVE (§11) ================= */
+@media (max-width: 1100px) {
+  .hud {
+    grid-template-columns: 52px 1fr;
+    grid-template-rows: 44px 1fr auto;
+    grid-template-areas:
+      "top top"
+      "rail stage"
+      "forum forum";
+  }
+  .hud-forum {
+    border-left: none; border-top: 1px solid var(--border);
+    max-height: 280px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blink { animation: none; }
+  .hud-tile, .hud-cmd-btn, .hud-rail-item, .hud-tab { transition: none; }
 }

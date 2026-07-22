@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { PlayerProvider, usePlayer } from "@/lib/client/gameContext";
 import { Shell, type NavSection } from "@/lib/client/Shell";
 import { api } from "@/lib/client/api";
@@ -31,8 +32,14 @@ const SECTIONS: NavSection[] = [
 
 function PlayShell({ children }: { children: React.ReactNode }) {
   const { me, gameId, subdivisionId, game } = usePlayer();
+  const pathname = usePathname();
   const [report, setReport] = useState<ReportResponse | null>(null);
   const [now, setNow] = useState(Date.now());
+
+  // The tactical HUD (§3) provides its own full-viewport shell (top bar + nav rail +
+  // stage + forum), so it bypasses the classic sidebar/topbar chrome entirely while
+  // still living under PlayerProvider for shared identity/game state.
+  const isHud = pathname?.startsWith("/play/hud");
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -46,6 +53,8 @@ function PlayShell({ children }: { children: React.ReactNode }) {
       .then(setReport)
       .catch(() => setReport(null));
   }, [gameId, subdivisionId, game?.turnNumber]);
+
+  if (isHud) return <>{children}</>;
 
   const res = report?.own.resources;
   const ticker = res ? (
