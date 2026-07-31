@@ -18,6 +18,15 @@ in-universe Mars Colonial Authority document.
   `<script type="text/babel">` block (not loaded via `src=`, since fetching a
   local `.jsx` file over `file://` is blocked by CORS). Just double-click it
   to open in a browser — no local server, no build step, no install.
+- **`registration-standalone-offline.html`** — a fully offline-capable
+  single file: no React, no CDN, no network requests of any kind. The same
+  wizard/certificate logic reimplemented in plain JS/DOM, with the Oswald
+  and Courier Prime fonts embedded directly as base64 `@font-face` data URIs.
+  This is the one to use anywhere you can't guarantee internet access at
+  render time (a phone with no signal, an air-gapped machine, hosting on a
+  platform that blocks outbound requests) — save it and open it, nothing
+  else has to load. Keep it in sync with the other two if you edit the
+  design or fields; it's a separate implementation, not a shared bundle.
 
 ## Using it in a real React app
 
